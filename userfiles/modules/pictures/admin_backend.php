@@ -141,7 +141,7 @@ mw_admin_puctires_upload_browse_existing = function(){
 <input name="thumbnail"  type="hidden" value="<?php print ($data['thumbnail'])?>" />
 
 
-<label class="mw-ui-label"><?php _e("Add Images"); ?> or <a href="javascript:mw_admin_puctires_upload_browse_existing()" class="mw-ui-link mw-ui-btn-small"> browse uploaded</a> <small>(<?php _e("The first image will be cover photo"); ?>)</small> </label>
+<label class="mw-ui-label"><?php _e("Add Images"); ?> <?php _e('or'); ?> <a href="javascript:mw_admin_puctires_upload_browse_existing()" class="mw-ui-link mw-ui-btn-small"> <?php _e('browse uploaded'); ?></a> <small>(<?php _e("The first image will be cover photo"); ?>)</small> </label>
 <div class="admin-thumbs-holder left" id="admin-thumbs-holder-sort-<?php print $rand; ?>">
 
 <div class="relative post-thumb-uploader" id="backend_image_uploader"><small id="backend_image_uploader_label"><?php _e("Upload"); ?></small></div>
@@ -162,12 +162,54 @@ mw_admin_puctires_upload_browse_existing = function(){
             onblur="$(this.parentNode).removeClass('active');"
             name="media-description-<?php print $tn; ?>"
       />
+
+	
+	<?php
+$tags_str = picture_tags($item['id']);
+if(!$tags_str){
+	 $tags_str = array();
+ }
+ 
+	?>
+	<input
+            placeholder="<?php _e("Image Tags"); ?>"
+            autocomplete="off"
+            class="image-tags"
+            value="<?php print implode(',',$tags_str); ?>"
+            onkeyup="mw.on.stopWriting(this, function(){mw.module_pictures.save_tags('<?php print $item['id'] ?>', this.value);});"
+            onfocus="$(this.parentNode).addClass('active');"
+            onblur="$(this).hide().parent().removeClass('active');"
+            name="media-tags-<?php print $tn; ?>"
+      />
+	
+	
+	
+	  
+	  
+	  
+	  
+	  
       <a title="<?php _e("Delete"); ?>" class="mw-icon-close" href="javascript:;" onclick="mw.module_pictures.del('<?php print $item['id'] ?>');"></a> </div>
   </div>
   <?php endforeach; ?>
   <?php endif;?>
   <script>mw.require("files.js", true);</script>
   <script>
+      editImageTags = function(event){
+          var parent = null;
+          mw.tools.foreachParents(event.target, function(loop){
+
+              if(mw.tools.hasClass(this, 'admin-thumb-item')){
+                parent = this;
+                mw.tools.stopLoop(loop);
+              }
+
+          });
+          if(parent !== null){
+            $(".image-tags", parent).show() 
+          }
+
+      }
       var uploader = mw.files.uploader({
              filetypes:"images",
              name:'basic-images-uploader'
@@ -192,7 +234,16 @@ mw_admin_puctires_upload_browse_existing = function(){
     	    setTimeout(function(){
     	        after_upld(a.src, e.type, '<?php print $for ?>', '<?php print $for_id ?>', '<?php print $params['id'] ?>');
         	},300);
-         })
+         });
+         $(".image-tag-view").remove();
+         $(".image-tags").each(function(){
+             $(".mw-post-media-img", mw.tools.firstParentWithClass(this, 'admin-thumb-item'))
+                .append('<span class="image-tag-view tip" onclick="editImageTags(event)" data-tip="Tags: '+this.value+'" ><span class="mw-icon-app-pricetag"></span></span>');
+                $(this).on('change', function(){
+                    $(".image-tag-view", mw.tools.firstParentWithClass(this, 'admin-thumb-item')).attr('data-tip', 'Tags: '+this.value);
+                });
+
+         });
       });
   </script>
 </div>

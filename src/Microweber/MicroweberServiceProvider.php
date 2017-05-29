@@ -3,15 +3,15 @@
 namespace Microweber;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\ClassLoader;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Http\Request;
 use Cache;
 use App;
 use Microweber\Utils\Adapters\Config\ConfigSave as ConfigSave;
+use Microweber\Utils\ClassLoader;
 
 if (!defined('MW_VERSION')) {
-    include_once __DIR__.DIRECTORY_SEPARATOR.'functions'.DIRECTORY_SEPARATOR.'bootstrap.php';
+    include_once __DIR__ . DIRECTORY_SEPARATOR . 'functions' . DIRECTORY_SEPARATOR . 'bootstrap.php';
 }
 
 class MicroweberServiceProvider extends ServiceProvider
@@ -19,7 +19,7 @@ class MicroweberServiceProvider extends ServiceProvider
     public function __construct($app)
     {
         ClassLoader::addDirectories(array(
-            base_path().DIRECTORY_SEPARATOR.'userfiles'.DIRECTORY_SEPARATOR.'modules',
+            base_path() . DIRECTORY_SEPARATOR . 'userfiles' . DIRECTORY_SEPARATOR . 'modules',
             __DIR__,
         ));
 
@@ -32,26 +32,33 @@ class MicroweberServiceProvider extends ServiceProvider
     public function register()
     {
 
-//https://twitter.com/jeremeamia/status/748986303367217152
-//        if (PHP_VERSION_ID < 70000) {
-//            class_alias('Exception', 'Throwable');
-//        }
 
 
         // Set environment
-
-        if (!$this->app->runningInConsole()) {
+        if (!is_cli()) {
             $domain = $_SERVER['HTTP_HOST'];
             $this->app->detectEnvironment(function () use ($domain) {
                 if (getenv('APP_ENV')) {
                     return getenv('APP_ENV');
                 }
-
+                $port = explode(':', $_SERVER['HTTP_HOST']);
                 $domain = str_ireplace('www.', '', $domain);
-                $domain = str_ireplace(':'.$_SERVER['SERVER_PORT'], '', $domain);
+                if (isset($port[1])) {
+                    $domain = str_ireplace(':' . $port[1], '', $domain);
+                }
                 $domain = strtolower($domain);
                 return $domain;
             });
+        } else {
+            if (defined('MW_UNIT_TEST')) {
+                $this->app->detectEnvironment(function () {
+                    if (!defined('MW_UNIT_TEST_ENV_FROM_TEST')) {
+                        return 'testing';
+                    } else {
+                        return MW_UNIT_TEST_ENV_FROM_TEST;
+                    }
+                });
+            }
         }
 
         $this->app->instance('config', new ConfigSave($this->app));
@@ -63,8 +70,17 @@ class MicroweberServiceProvider extends ServiceProvider
 
         $this->app->bind('Illuminate\Contracts\Bus\Dispatcher', 'Illuminate\Bus\Dispatcher');
         $this->app->bind('Illuminate\Contracts\Queue\Queue', 'Illuminate\Contracts\Queue\Queue');
+        // $this->app->register('Illuminate\Auth\AuthServiceProvider');
 
+//        $this->app->singleton(
+//            'Illuminate\Contracts\Debug\ExceptionHandler',
+//            'Microweber\App\Exceptions\Handler'
+//        );
 
+        $this->app->singleton(
+            'Illuminate\Contracts\Console\Kernel',
+            'Microweber\App\Console\Kernel'
+        );
 
 
         $this->app->singleton('event_manager', function ($app) {
@@ -118,6 +134,11 @@ class MicroweberServiceProvider extends ServiceProvider
             return new Providers\Content\DataFieldsManager($app);
         });
 
+
+        $this->app->singleton('tags_manager', function ($app) {
+            return new Providers\Content\TagsManager($app);
+        });
+
         $this->app->singleton('attributes_manager', function ($app) {
             return new Providers\Content\AttributesManager($app);
         });
@@ -125,9 +146,7 @@ class MicroweberServiceProvider extends ServiceProvider
             return new Providers\FormsManager($app);
         });
 
-        $this->app->singleton('email_notifications_manager', function ($app) {
-            return new Providers\EmailNotificationsManager($app);
-        });
+
         $this->app->singleton('notifications_manager', function ($app) {
             return new Providers\NotificationsManager($app);
         });
@@ -186,19 +205,10 @@ class MicroweberServiceProvider extends ServiceProvider
         $this->app->singleton('template_manager', function ($app) {
             return new Providers\TemplateManager($app);
         });
-        $this->app->singleton('ui', function ($app) {
-            return new Providers\Ui($app);
-        });
 
-        $this->app->singleton('content_manager_crud', function ($app) {
-            return new Providers\Content\ContentManagerCrud($app);
-        });
-
-        $this->app->singleton('content_manager_helpers', function ($app) {
-            return new Providers\Content\ContentManagerHelpers($app);
-        });
 
         $this->app->register('Collective\Html\HtmlServiceProvider');
+
         AliasLoader::getInstance()->alias('Form', 'Collective\Html\FormFacade');
         AliasLoader::getInstance()->alias('HTML', 'Collective\Html\HtmlFacade');
 
@@ -207,12 +217,15 @@ class MicroweberServiceProvider extends ServiceProvider
         AliasLoader::getInstance()->alias('Carbon', 'Carbon\Carbon');
 
 
+        $this->app->register('Conner\Tagging\Providers\TaggingServiceProvider');
+
+
         // $this->app->register('SocialiteProviders\Manager\ServiceProvider');
     }
 
     public function boot(Request $request)
     {
-        parent::boot();
+        //parent::boot();
 
         // public = /
         App::instance('path.public', base_path());
@@ -230,7 +243,7 @@ class MicroweberServiceProvider extends ServiceProvider
             if ($language != false) {
                 set_current_lang($language);
             }
-            if ($this->app->runningInConsole()) {
+            if (is_cli()) {
                 $this->commands('Microweber\Commands\UpdateCommand');
             }
 
@@ -241,14 +254,13 @@ class MicroweberServiceProvider extends ServiceProvider
 
         // Register routes
         $this->registerRoutes();
-        $this->app->event_manager->trigger('mw.after.boot',$this);
+        $this->app->event_manager->trigger('mw.after.boot', $this);
     }
-
 
 
     private function registerRoutes()
     {
-        $routesFile = __DIR__.'/routes.php';
+        $routesFile = __DIR__ . '/routes.php';
         if (file_exists($routesFile)) {
             include $routesFile;
 
@@ -260,7 +272,7 @@ class MicroweberServiceProvider extends ServiceProvider
 
     public function autoloadModules($className)
     {
-        $filename = modules_path().$className.'.php';
+        $filename = modules_path() . $className . '.php';
         $filename = normalize_path($filename, false);
 
         if (!class_exists($className, false)) {

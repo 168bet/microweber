@@ -96,12 +96,12 @@ function mw_stats_track_visit() {
     $cookie_name_time = 'mw-time' . crc32($function_cache_id);
 
     $vc1 = 1;
-    if (mw()->session->get($cookie_name)){
-        $vc1 = intval(mw()->session->get($cookie_name)) + 1;
-        mw()->session->set($cookie_name, $vc1);
+    if (mw()->user_manager->session_get($cookie_name)){
+        $vc1 = intval(mw()->user_manager->session_get($cookie_name)) + 1;
+        mw()->user_manager->session_set($cookie_name, $vc1);
 
-    } elseif (!mw()->session->get($cookie_name)) {
-        mw()->session->set($cookie_name, $vc1);
+    } elseif (!mw()->user_manager->session_get($cookie_name)) {
+        mw()->user_manager->session_set($cookie_name, $vc1);
     }
 
 
@@ -128,8 +128,8 @@ function mw_stats_track_visit() {
             }
 
             $vc1 = 0;
-            if (mw()->session->get($cookie_name)){
-                $vc1 = intval(mw()->session->get($cookie_name));
+            if (mw()->user_manager->session_get($cookie_name)){
+                $vc1 = intval(mw()->user_manager->session_get($cookie_name));
             }
             $vc = $vc + $vc1;
             $data['view_count'] = $vc;
@@ -149,7 +149,7 @@ function mw_stats_track_visit() {
 
 
         $save = mw()->database_manager->save($table, $data);
-        mw()->session->set($cookie_name, 0);
+        mw()->user_manager->session_set($cookie_name, 0);
 
 
     }
@@ -175,12 +175,12 @@ function stats_insert_cookie_based() {
     $few_mins_ago_visit_date = date("Y-m-d H:i:s");
     if (isset($_COOKIE[ $cookie_name ])){
         $vc1 = intval($_COOKIE[ $cookie_name ]) + 1;
-        //	mw()->session->get($cookie_name) = $vc1;
+        //	mw()->user_manager->session_get($cookie_name) = $vc1;
         setcookie($cookie_name, $vc1, time() + 99);
         //  return true;
     } elseif (!isset($_COOKIE[ $cookie_name ])) {
         setcookie($cookie_name, $vc1, time() + 99);
-        //mw()->session->get($cookie_name) = $vc1;
+        //mw()->user_manager->session_get($cookie_name) = $vc1;
         // return true;
     }
 
@@ -247,8 +247,10 @@ function get_visits_for_sid($sid) {
 function stats_group_by($rows, $format) {
     $results = array();
     foreach ($rows as $row) {
+		if(isset($row->visit_date)){
         $group = Carbon::parse($row->visit_date)->format($format);
         $results[ $group ] = $row;
+		}
     }
 
     return $results;
@@ -268,7 +270,9 @@ function get_visits($range = 'daily') {
                 ->groupBy('id')
                 ->get();
 				
-			
+			if($results){
+					$results = $results->toArray();
+				}
 				
             break;
 
@@ -281,7 +285,9 @@ function get_visits($range = 'daily') {
 				->groupBy('id')
 
                 ->get();
-			
+			if($results){
+					$results = $results->toArray();
+				}
             $results = stats_group_by($rows, 'W');
 			
 			
@@ -294,7 +300,9 @@ function get_visits($range = 'daily') {
                 ->where('visit_date', '>', $ago)
 				->groupBy('id')
                 ->get();
-					
+			if($results){
+					$results = $results->toArray();
+				}		
             $results = stats_group_by($rows, 'm');
             break;
 
@@ -304,6 +312,12 @@ function get_visits($range = 'daily') {
                 ->orderBy('visit_time', 'desc')
                 ->take(5)
                 ->get();
+				
+				if($results){
+					$results = $results->toArray();
+				}
+				
+				
             break;
 
         case 'requests_num' :
@@ -344,6 +358,7 @@ function get_visits($range = 'daily') {
     $res = array();
     if (is_array($results)){
         foreach ($results as &$item) {
+			
             if (is_object($item)){
                 $item = (array) $item;
             }

@@ -69,6 +69,7 @@ class Guzzle
                 curl_setopt($ch, CURLOPT_TIMEOUT, 120);
                 curl_setopt($ch, CURLOPT_FILE, $fp); // write curl response to file
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
                 curl_exec($ch); // get curl response
                 curl_close($ch);
                 fclose($fp);
@@ -81,7 +82,7 @@ class Guzzle
         $client = new Client();
 
         $response = $client->post($this->url, [
-            'body' => $data,
+            'form_params' => $data,
             'timeout' => $this->timeout,
             'verify'=>__DIR__.DS.'cacert.pem.txt'
         ]);

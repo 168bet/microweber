@@ -142,7 +142,6 @@ $( "#content_type_filter_by_select" ).change(function() {
 	}
    
 });
-            
 
 
         });
@@ -238,18 +237,16 @@ $( "#content_type_filter_by_select" ).change(function() {
                     <?php endif; ?>
                     <?php if (isset($params['page-id']) and intval($params['page-id']) != 0): ?>
                     <?php $edit_link = admin_url('view:content#action=editpost:' . $params['page-id']); ?>
-                    <a href="<?php print $edit_link; ?>" class="mw-ui-btn edit-content-btn"
-                                               id="edit-content-btn" data-tip="bottom-left"><span
-                                                    class="mw-icon-pen"></span>
-                    <?php _e("Edit page"); ?>
+                    <a href="<?php print $edit_link; ?>" class="editbtn"
+                                               id="edit-content-btn" data-tip="bottom-left">
+                    <span><?php _e("Edit page"); ?></span>
                     </a>
                     <?php endif; ?>
                     <?php if (isset($params['category-id'])): ?>
                     <?php $edit_link = admin_url('view:content#action=editcategory:' . $params['category-id']); ?>
-                    <a href="<?php print $edit_link; ?>" class="mw-ui-btn edit-category-btn"
-                                               id="edit-category-btn" data-tip="bottom-left"> <span
-                                                    class="mw-icon-pen"></span>
-                    <?php _e("Edit category"); ?>
+                    <a href="<?php print $edit_link; ?>" class="editbtn"
+                                               id="edit-category-btn" data-tip="bottom-left">
+                    <span><?php _e("Edit category"); ?></span>
                     </a>
                     <?php endif; ?>
                   </div>
@@ -258,7 +255,7 @@ $( "#content_type_filter_by_select" ).change(function() {
                   <div class="pull-right" style="margin-right:5px;">
                 
                     <select id="content_type_filter_by_select" class="mw-ui-field" <?php if(!$selected): ?> style="display:none" <?php endif; ?>>
-                      <option value="">All</option>
+                      <option value=""><?php _e('All'); ?></option>
                       <?php foreach($content_types as $k=>$items): ?>
                       <optgroup label="<?php print ucfirst($k); ?>">
                       <option value="<?php print $k; ?>" <?php if($k == $selected): ?> selected="selected" <?php endif; ?>><?php print ucfirst($k); ?></option>
@@ -276,28 +273,42 @@ $( "#content_type_filter_by_select" ).change(function() {
                   </div>
                   <?php endif; ?> 
                   <div class="pull-right relative">
-                    <input
-                                            onkeyup="mw.on.stopWriting(this,function(){mw.url.windowHashParam('search',this.value)})"
-                                            value="<?php if (isset($params['keyword']) and $params['keyword'] != false): ?><?php print $params['keyword'] ?><?php endif; ?>"
-                                            <?php  if (isset($params['keyword']) and $params['keyword'] != false): ?>
-                                            autofocus="autofocus"
-                                        <?php endif; ?>
-                                            placeholder="<?php _e("Search for posts"); ?>"
-                                            type="text"
-                                            style="<?php if (isset($params['keyword']) and $params['keyword'] != false): ?> min-width: 145px; <?php endif; ?>"
-                                            class="mw-ui-searchfield pull-right"
-                                            id="mw-search-field"/>
+                      <div class="top-search">
+                        <input
+
+                            value="<?php if (isset($params['keyword']) and $params['keyword'] != false): ?><?php print $params['keyword'] ?><?php endif; ?>"
+                            <?php  if (isset($params['keyword']) and $params['keyword'] != false): ?>
+                            autofocus="autofocus"
+                        <?php endif; ?>
+                            placeholder="<?php _e("Search"); ?>"
+                            type="text"
+                            onkeyup="event.keyCode==13?mw.url.windowHashParam('search',this.value):false"
+                            />
+                           <span class="top-form-submit" onclick="mw.url.windowHashParam('search',$(this).prev().val())"><span class="mw-icon-search"></span></span>
+                      </div>
+                      <script>
+                        $(document).ready(function(){
+                            $(".top-search input").on('focus', function () {
+                                $(this).parent().addClass('focused');
+                            });
+                            $(".top-search input").on('blur', function () {
+                                $(this).parent().removeClass('focused');
+                            });
+                        })
+                      </script>
                   </div>
-                  
+
                 </div>
               </div>
             </div>
-            <div class="mw-ui-col col-bar-live-edit"><a href="<?php print $past_page; ?>?editmode=y"
-                                                                    class="mw-ui-btn default-invert tip"
-                                                                    data-tip="<?php _e("Go Live Edit"); ?>"
-                                                                    data-tipposition="bottom-center"><span
-                                    class="mw-icon-live"></span></a></div>
+            <div class="mw-ui-col col-bar-live-edit">
+                    <a href="<?php print $past_page; ?>?editmode=y"
+                        class="mw-ui-btn mw-ui-btn-invert tip golive-button"
+
+                        data-tipposition="bottom-center"> <?php _e("Go Live Edit"); ?></a>
+            </div>
             <?php mw()->event_manager->trigger('module.content.manager.toolbar.end', $page_info); ?>
+
           </div>
           <?php else: ?>
           <?php endif; ?>
@@ -339,10 +350,10 @@ $( "#content_type_filter_by_select" ).change(function() {
             </span>
 
             <div class="mw-dropdown mw-dropdown-default" id="bulk-actions">
-              <span class="mw-dropdown-value mw-ui-btn mw-ui-btn-small mw-dropdown-val">Bulk actions</span>
+              <span class="mw-dropdown-value mw-ui-btn mw-ui-btn-small mw-dropdown-val"><?php _e("Bulk actions"); ?></span>
               <div class="mw-dropdown-content">
                 <ul>
-                  <li><a onmousedown="assign_selected_posts_to_category();">Move to category</a></li>
+                  <li><a onmousedown="assign_selected_posts_to_category();"><?php _e("Move to category"); ?></a></li>
                   <li><a onmousedown="delete_selected_posts();"><?php _e("Delete"); ?></a></li>
                 </ul>
               </div>

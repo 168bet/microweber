@@ -147,18 +147,16 @@ class UserManager
             return array('error' => 'There are ' . $check2 . ' failed login attempts from your IP in the last 10 minutes. You are blocked for 10 minutes!');
         }
 
-        $login_captcha_enabled = get_option('login_captcha_enabled','users') == 'y';
+        $login_captcha_enabled = get_option('login_captcha_enabled', 'users') == 'y';
         if ($login_captcha_enabled) {
             if (!isset($params['captcha'])) {
                 return array('error' => 'Please enter the captcha answer!');
-            } else {
-                $validate_captcha = $this->app->captcha->validate($params['captcha']);
-                if (!$validate_captcha) {
-                    return array('error' => 'Invalid captcha answer!', 'captcha_error' => true);
-                }
+            }
+            $validate_captcha = $this->app->captcha->validate($params['captcha'], null, false);
+            if (!$validate_captcha) {
+                return array('error' => 'Invalid captcha answer!', 'captcha_error' => true);
             }
         }
-
 
 
         $override = $this->app->event_manager->trigger('mw.user.before_login', $params);
@@ -181,6 +179,9 @@ class UserManager
         }
         $old_sid = Session::getId();
         if (isset($params['username'])) {
+            if (!$params['username']) {
+                return array('error' => 'Please enter username or email');
+            }
             $ok = Auth::attempt([
                 'username' => $params['username'],
                 'password' => $params['password'],
@@ -194,6 +195,9 @@ class UserManager
                 }
             }
         } elseif (isset($params['email'])) {
+            if (!$params['email']) {
+                return array('error' => 'Please enter email');
+            }
             $ok = Auth::attempt([
                 'email' => $params['email'],
                 'password' => $params['password'],
@@ -204,9 +208,32 @@ class UserManager
             return;
         }
         if ($ok) {
+            if (defined('MW_USER_IP') and intval(Auth::user()->is_admin) == 1) {
+                $allowed_ips = config('microweber.admin_allowed_ips');
+                if ($allowed_ips) {
+                    $allowed_ips = explode(',', $allowed_ips);
+                    $allowed_ips = array_trim($allowed_ips);
+                    if (!empty($allowed_ips)) {
+                        $is_allowed = false;
+                        foreach ($allowed_ips as $allowed_ip) {
+                            $is = \Symfony\Component\HttpFoundation\IpUtils::checkIp(MW_USER_IP, $allowed_ip);
+                            if ($is) {
+                                $is_allowed = $is;
+                            }
+                        }
+                        if (!$is_allowed) {
+                            $this->logout();
+                            return array('error' => 'You are not allowed to login from this IP address');
+                        }
+                    }
+                }
+            }
+
+
             $user = Auth::login(Auth::user());
             $user_data = $this->get_by_id(Auth::user()->id);
             $user_data['old_sid'] = $old_sid;
+
             $this->app->event_manager->trigger('mw.user.login', $user_data);
             if ($ok && $redirect_after) {
                 return $this->app->url_manager->redirect($redirect_after);
@@ -349,6 +376,10 @@ class UserManager
 
         $name = $this->get_by_id($user_id);
         if (isset($name['thumbnail']) and $name['thumbnail'] != '') {
+            if (is_https()) {
+                $rep = 1;
+                $name['thumbnail'] = str_ireplace('http://', '//', $name['thumbnail'], $rep);
+            }
             return $name['thumbnail'];
         }
     }
@@ -398,9 +429,16 @@ class UserManager
      *
      * @uses $this->get_by_id()
      */
-    public function nice_name($id, $mode = 'full')
+    public function nice_name($id = false, $mode = 'full')
     {
+
+        if (!$id) {
+            $id = $this->id();
+        }
+
         $user = $this->get_by_id($id);
+
+
         $user_data = $user;
         if (empty($user)) {
             return false;
@@ -427,6 +465,11 @@ class UserManager
 
             case 'username' :
                 $name = $user_data['username'];
+                break;
+
+
+            case 'email' :
+                $name = $user_data['email'];
                 break;
 
             case 'full' :
@@ -522,21 +565,21 @@ class UserManager
         }
         $user = isset($params['username']) ? $params['username'] : false;
         $pass = isset($params['password']) ? $params['password'] : false;
+        $pass2 = isset($params['password2']) ? $params['password2'] : $pass;
         $email = isset($params['email']) ? $params['email'] : false;
         $first_name = isset($params['first_name']) ? $params['first_name'] : false;
         $last_name = isset($params['last_name']) ? $params['last_name'] : false;
         $middle_name = isset($params['middle_name']) ? $params['middle_name'] : false;
         $confirm_password = isset($params['confirm_password']) ? $params['confirm_password'] : false;
-        $pass2 = $pass;
 
         $no_captcha = get_option('captcha_disabled', 'users') == 'y';
-        $disable_registration_with_temporary_email = get_option('disable_registration_with_temporary_email','users') == 'y';
+        $disable_registration_with_temporary_email = get_option('disable_registration_with_temporary_email', 'users') == 'y';
         if ($email != false and $disable_registration_with_temporary_email) {
             $checker = new \Microweber\Utils\lib\DisposableEmailChecker();
             $is_temp_email = $checker->check($email);
-            if($is_temp_email){
+            if ($is_temp_email) {
                 $domain = substr(strrchr($email, "@"), 1);
-                return array('error' => 'You cannot register with email from '.$domain.' domain');
+                return array('error' => 'You cannot register with email from ' . $domain . ' domain');
             }
         }
 
@@ -574,6 +617,11 @@ class UserManager
             return array('error' => 'Please set password!');
         }
 
+        if (get_option('form_show_password_confirmation', 'users') == 'y') {
+            if (!isset($params['password2']) or (isset($params['password2']) and ($params['password2'] != $params['password']))) {
+                return array('error' => 'Two password entries do not match!');
+            }
+        }
 
         if (!isset($params['username']) and !isset($params['email'])) {
             return array('error' => 'Please set username or email!');
@@ -619,9 +667,6 @@ class UserManager
                     $reg['email'] = $email;
                     $reg['password'] = $pass2;
                     $reg['is_active'] = 1;
-                    if ($first_name != false) {
-                        $reg['first_name'] = $first_name;
-                    }
                     if ($first_name != false) {
                         $reg['first_name'] = $first_name;
                     }
@@ -908,7 +953,6 @@ class UserManager
             }
 
 
-
             if (isset($params['id']) and intval($params['id']) != 0) {
                 $id_to_return = intval($params['id']);
             } else {
@@ -946,6 +990,19 @@ class UserManager
         }
 
         return $res;
+    }
+
+    public function get_by_email($email)
+    {
+        $data = array();
+        $data['email'] = $email;
+        $data['limit'] = 1;
+        $data = $this->get_all($data);
+        if (isset($data[0])) {
+            $data = $data[0];
+        }
+
+        return $data;
     }
 
     public function get_by_username($username)
@@ -1314,6 +1371,7 @@ class UserManager
         }
 
         $auth_provider = $_REQUEST['provider'];
+        $this->socialite_config($auth_provider);
 
         try {
             $this->socialite_config($auth_provider);
@@ -1337,9 +1395,10 @@ class UserManager
             $save['thumbnail'] = $avatar;
             $save['username'] = $username;
             $save['is_active'] = 1;
-            $save['is_admin'] = is_null(User::first());
+            $save['is_admin'] = 0;
             $save['first_name'] = '';
             $save['last_name'] = '';
+
             if ($name != false) {
                 $names = explode(' ', $name);
                 if (isset($names[0])) {
@@ -1468,7 +1527,28 @@ class UserManager
 
     public function logout_url()
     {
-        return api_url('logout');
+
+        $template_dir = $this->app->template->dir();
+        $file = $template_dir . 'logout.php';
+        $default_url = false;
+        if (is_file($file)) {
+            $default_url = 'logout';
+        } else {
+            $default_url = 'users/logout';
+        }
+
+        $logout_url = $this->app->option_manager->get('logout_url', 'users');
+        if ($logout_url != false and trim($logout_url) != '') {
+            $default_url = $logout_url;
+        }
+
+        $logout_url_sess = $this->session_get('logout_url');
+
+        if ($logout_url_sess == false) {
+            return $this->app->url_manager->site($default_url);
+        } else {
+            return $this->app->url_manager->site($logout_url_sess);
+        }
     }
 
     public function login_url()
@@ -1482,17 +1562,17 @@ class UserManager
             $default_url = 'users/login';
         }
 
-        $checkout_url = $this->app->option_manager->get('login_url', 'users');
-        if ($checkout_url != false and trim($checkout_url) != '') {
-            $default_url = $checkout_url;
+        $login_url = $this->app->option_manager->get('login_url', 'users');
+        if ($login_url != false and trim($login_url) != '') {
+            $default_url = $login_url;
         }
 
-        $checkout_url_sess = $this->session_get('login_url');
+        $login_url_sess = $this->session_get('login_url');
 
-        if ($checkout_url_sess == false) {
+        if ($login_url_sess == false) {
             return $this->app->url_manager->site($default_url);
         } else {
-            return $this->app->url_manager->site($checkout_url_sess);
+            return $this->app->url_manager->site($login_url_sess);
         }
     }
 

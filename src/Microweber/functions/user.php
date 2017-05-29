@@ -2,7 +2,9 @@
 
 
 if (!defined('MW_USER_IP')) {
-    if (isset($_SERVER['REMOTE_ADDR'])) {
+    if (isset($_SERVER["HTTP_CF_CONNECTING_IP"])) {
+        define('MW_USER_IP', $_SERVER['HTTP_CF_CONNECTING_IP']);
+    } else if (isset($_SERVER['REMOTE_ADDR'])) {
         define('MW_USER_IP', $_SERVER['REMOTE_ADDR']);
     } else {
         define('MW_USER_IP', '127.0.0.1');
@@ -228,6 +230,12 @@ function user_name($user_id = false, $mode = 'full')
     return mw()->user_manager->name($user_id, $mode);
 }
 
+
+function user_email($user_id = false)
+{
+    return user_name($user_id, $mode='email');
+}
+
 function user_picture($user_id = false)
 {
     return mw()->user_manager->picture($user_id);
@@ -293,6 +301,9 @@ api_expose('users/verify_email_link', function ($params) {
                 $adminUser->save();
                 mw()->cache_manager->delete('users/global');
                 mw()->cache_manager->delete('users/'.$decoded);
+                $params['user_id'] = $decoded;
+                mw()->event_manager->trigger('mw.user.verify_email_link', $params);
+
                 return  mw()->url_manager->redirect(site_url());
             }
 

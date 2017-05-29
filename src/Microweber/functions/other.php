@@ -495,14 +495,6 @@ if (!function_exists('params_stripslashes_array')) {
     }
 }
 
-if (!function_exists('validator')) {
-    function validator($data)
-    {
-        $validator = new \Microweber\Validator($data);
-
-        return $validator;
-    }
-}
 
 if (!function_exists('powered_by_link')) {
     function powered_by_link()
@@ -700,4 +692,12 @@ if (!function_exists('titlelize')) {
     {
         return mw()->format->titlelize($str);
     }
+}
+
+
+function load_layout_block($block_name)
+{
+    $block_name = str_replace('..', '', $block_name);
+
+    return include(modules_path() . DS . 'layouts/blocks/' . $block_name . '.php');
 }

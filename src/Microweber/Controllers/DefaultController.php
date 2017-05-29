@@ -52,6 +52,15 @@ class DefaultController extends Controller
             }
         }
 
+        $force_https = \Config::get('microweber.force_https');
+
+        if ($force_https and !is_cli()) {
+            if (!is_https()) {
+                $https = str_ireplace('http://', 'https://', url_current());
+                return mw()->url_manager->redirect($https);
+            }
+        }
+
         return $this->frontend();
     }
 
@@ -68,32 +77,31 @@ class DefaultController extends Controller
         $site_title = $this->app->option_manager->get('website_title', 'website');
         $site_desc = $this->app->option_manager->get('website_description', 'website');
         $rssfeed = '<?xml version="1.0" encoding="UTF-8"?>';
-        $rssfeed .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'."\n";
-        $rssfeed .= '<channel>'."\n";
-        $rssfeed .= '<atom:link href="'.site_url('rss').'" rel="self" type="application/rss+xml" />'."\n";
-        $rssfeed .= '<title>'.$site_title.'</title>'."\n";
-        $rssfeed .= '<link>'.site_url().'</link>'."\n";
-        $rssfeed .= '<description>'.$site_desc.'</description>'."\n";
+        $rssfeed .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">' . "\n";
+        $rssfeed .= '<channel>' . "\n";
+        $rssfeed .= '<atom:link href="' . site_url('rss') . '" rel="self" type="application/rss+xml" />' . "\n";
+        $rssfeed .= '<title>' . $site_title . '</title>' . "\n";
+        $rssfeed .= '<link>' . site_url() . '</link>' . "\n";
+        $rssfeed .= '<description>' . $site_desc . '</description>' . "\n";
         foreach ($cont as $row) {
             if (!isset($row['description']) or $row['description'] == '') {
                 $row['description'] = $row['content'];
             }
             $row['description'] = character_limiter(strip_tags(($row['description'])), 500);
-            $rssfeed .= '<item>'."\n";
-            $rssfeed .= '<title>'.$row['title'].'</title>'."\n";
-            $rssfeed .= '<description><![CDATA['.$row['description'].'  ]]></description>'."\n";
-            $rssfeed .= '<link>'.content_link($row['id']).'</link>'."\n";
-            $rssfeed .= '<pubDate>'.date('D, d M Y H:i:s O', strtotime($row['created_at'])).'</pubDate>'."\n";
-            $rssfeed .= '<guid>'.content_link($row['id']).'</guid>'."\n";
-            $rssfeed .= '</item>'."\n";
+            $rssfeed .= '<item>' . "\n";
+            $rssfeed .= '<title>' . $row['title'] . '</title>' . "\n";
+            $rssfeed .= '<description><![CDATA[' . $row['description'] . '  ]]></description>' . "\n";
+            $rssfeed .= '<link>' . content_link($row['id']) . '</link>' . "\n";
+            $rssfeed .= '<pubDate>' . date('D, d M Y H:i:s O', strtotime($row['created_at'])) . '</pubDate>' . "\n";
+            $rssfeed .= '<guid>' . content_link($row['id']) . '</guid>' . "\n";
+            $rssfeed .= '</item>' . "\n";
         }
-        $rssfeed .= '</channel>'."\n";
+        $rssfeed .= '</channel>' . "\n";
         $rssfeed .= '</rss>';
 
         event_trigger('mw_robot_url_hit');
 
         echo $rssfeed;
-        $this->app->content_manager->ping();
     }
 
     public function api_html()
@@ -101,7 +109,7 @@ class DefaultController extends Controller
         if (!defined('MW_API_HTML_OUTPUT')) {
             define('MW_API_HTML_OUTPUT', true);
         }
-        $this->api();
+        return $this->api();
     }
 
     public function api($api_function = false, $params = false)
@@ -113,6 +121,10 @@ class DefaultController extends Controller
         if (!defined('MW_API_CALL')) {
             define('MW_API_CALL', true);
         }
+
+        // dd($_SERVER);
+        //   dd($_SERVER);
+
 
         $set_constants = true;
         $mod_class_api = false;
@@ -141,7 +153,7 @@ class DefaultController extends Controller
         }
 
         if (defined('TEMPLATE_DIR')) {
-            $load_template_functions = TEMPLATE_DIR.'functions.php';
+            $load_template_functions = TEMPLATE_DIR . 'functions.php';
             if (is_file($load_template_functions)) {
                 include_once $load_template_functions;
             }
@@ -171,18 +183,18 @@ class DefaultController extends Controller
         $mod_api_class_clean = ltrim($mod_api_class_clean, '\\');
         $mod_api_class_clean_uc1 = ucfirst($mod_api_class_clean);
 
-        $mod_api_class1 = normalize_path(modules_path().$mod_api_class, false).'.php';
-        $mod_api_class_native = normalize_path(mw_includes_path().$mod_api_class, false).'.php';
-        $mod_api_class_native_system = normalize_path(dirname(MW_PATH).DS.$mod_api_class, false).'.php';
-        $mod_api_class_native_global_ns = normalize_path(mw_includes_path().'classes'.DS.$mod_api_class2, false).'.php';
-        $mod_api_class1_uc1 = normalize_path(modules_path().$mod_api_class_clean_uc1, false).'.php';
-        $mod_api_class_native_uc1 = normalize_path(mw_includes_path().$mod_api_class_clean_uc1, false).'.php';
-        $mod_api_class_native_global_ns_uc1 = normalize_path(mw_includes_path().'classes'.DS.$mod_api_class_clean_uc1, false).'.php';
+        $mod_api_class1 = normalize_path(modules_path() . $mod_api_class, false) . '.php';
+        $mod_api_class_native = normalize_path(mw_includes_path() . $mod_api_class, false) . '.php';
+        $mod_api_class_native_system = normalize_path(dirname(MW_PATH) . DS . $mod_api_class, false) . '.php';
+        $mod_api_class_native_global_ns = normalize_path(mw_includes_path() . 'classes' . DS . $mod_api_class2, false) . '.php';
+        $mod_api_class1_uc1 = normalize_path(modules_path() . $mod_api_class_clean_uc1, false) . '.php';
+        $mod_api_class_native_uc1 = normalize_path(mw_includes_path() . $mod_api_class_clean_uc1, false) . '.php';
+        $mod_api_class_native_global_ns_uc1 = normalize_path(mw_includes_path() . 'classes' . DS . $mod_api_class_clean_uc1, false) . '.php';
 
-        $mod_api_class2 = normalize_path(modules_path().DS.$mod_api_class_clean.DS.$mod_api_class_clean, false).'.php';
-        $mod_api_class2_uc1 = normalize_path(modules_path().DS.$mod_api_class_clean.DS.$mod_api_class_clean, false).'.php';
+        $mod_api_class2 = normalize_path(modules_path() . DS . $mod_api_class_clean . DS . $mod_api_class_clean, false) . '.php';
+        $mod_api_class2_uc1 = normalize_path(modules_path() . DS . $mod_api_class_clean . DS . $mod_api_class_clean, false) . '.php';
 
-        $try_class = '\\'.str_replace('/', '\\', $mod_api_class);
+        $try_class = '\\' . str_replace('/', '\\', $mod_api_class);
 
         if (class_exists($try_class, false)) {
             $caller_commander = 'class_is_already_here';
@@ -240,8 +252,6 @@ class DefaultController extends Controller
         }
 
 
-
-
         $api_exposed = explode(' ', $api_exposed);
         $api_exposed = array_unique($api_exposed);
         $api_exposed = array_trim($api_exposed);
@@ -282,6 +292,7 @@ class DefaultController extends Controller
 
         switch ($caller_commander) {
             case 'class_is_already_here':
+
                 if ($params != false) {
                     $data = $params;
                 } elseif (!$_POST and !$_REQUEST) {
@@ -298,14 +309,28 @@ class DefaultController extends Controller
                 static $loaded_classes = array();
 
                 //$try_class_n = src_
-                if (isset($loaded_classes[ $try_class ]) == false) {
+                if (isset($loaded_classes[$try_class]) == false) {
                     $res = new $try_class($data);
-                    $loaded_classes[ $try_class ] = $res;
+                    $loaded_classes[$try_class] = $res;
                 } else {
-                    $res = $loaded_classes[ $try_class ];
-
-                    //
+                    $res = $loaded_classes[$try_class];
                 }
+
+                if (isset($hooks[$api_function_full]) and !empty($hooks[$api_function_full])) {
+                    foreach ($hooks[$api_function_full] as $hook) {
+                        if (is_array($hook)) {
+                            $hook = array_pop($hook);
+                        }
+                        if (is_callable($hook)) {
+                            $res = call_user_func($hook, $data);
+                            if (defined('MW_API_RAW')) {
+                                $mod_class_api_called = true;
+                            }
+                            return $this->_api_responce($res);
+                        }
+                    }
+                }
+
 
                 if (method_exists($res, $try_class_func) or method_exists($res, $try_class_func2)) {
                     if (method_exists($res, $try_class_func2)) {
@@ -320,16 +345,14 @@ class DefaultController extends Controller
 
                     return $this->_api_responce($res);
                 }
-
                 break;
 
             default:
                 $res = false;
-
-                if (isset($hooks[ $api_function_full ])) {
+                if (isset($hooks[$api_function_full])) {
                     $data = array_merge($_GET, $_POST);
 
-                    $call = $hooks[ $api_function_full ];
+                    $call = $hooks[$api_function_full];
 
                     if (!empty($call)) {
                         foreach ($call as $call_item) {
@@ -353,14 +376,14 @@ class DefaultController extends Controller
                     $mod_api_class_test_full = implode('/', $mod_api_class_test);
                     $mod_api_err = false;
                     if (!defined('MW_API_RAW')) {
-                        if (!in_array($try_class_full, $api_exposed) and !in_array($try_class_full2, $api_exposed) and !in_array($mod_api_class_test_full, $api_exposed)) {
+                        if (!in_array($try_class_full, $api_exposed, true) and !in_array($try_class_full2, $api_exposed, true) and !in_array($mod_api_class_test_full, $api_exposed, true)) {
                             $mod_api_err = true;
 
                             foreach ($api_exposed as $api_exposed_value) {
                                 if ($mod_api_err == true) {
                                     if ($api_exposed_value == $try_class_full) {
                                         $mod_api_err = false;
-                                    } elseif (strtolower('\\'.$api_exposed_value) == strtolower($try_class_full)) {
+                                    } elseif (strtolower('\\' . $api_exposed_value) == strtolower($try_class_full)) {
                                         $mod_api_err = false;
                                     } elseif ($api_exposed_value == $try_class_full2) {
                                         $mod_api_err = false;
@@ -424,7 +447,7 @@ class DefaultController extends Controller
                                 return $this->_api_responce($res);
                             }
                         } else {
-                            mw_error('The api class '.$try_class.'  does not exist');
+                            mw_error('The api class ' . $try_class . '  does not exist');
                         }
                     }
                 }
@@ -438,10 +461,11 @@ class DefaultController extends Controller
         }
 
         if ($api_function == 'module' and $mod_class_api_called == false) {
-            $this->module();
+
+            return $this->module();
         } else {
             $err = false;
-            if (!in_array($api_function, $api_exposed)) {
+            if (!in_array($api_function, $api_exposed, true)) {
                 $err = true;
             }
 
@@ -482,7 +506,7 @@ class DefaultController extends Controller
                     }
 
                     $api_function_full_2 = explode('/', $api_function_full);
-                    unset($api_function_full_2[ count($api_function_full_2) - 1 ]);
+                    unset($api_function_full_2[count($api_function_full_2) - 1]);
                     $api_function_full_2 = implode('/', $api_function_full_2);
 
                     if (function_exists($api_function)) {
@@ -500,7 +524,7 @@ class DefaultController extends Controller
                         }
                     } else {
                         $api_function_full_2 = str_replace(array('..', '/'), array('', '\\'), $api_function_full_2);
-                        $api_function_full_2 = __NAMESPACE__.'\\'.$api_function_full_2;
+                        $api_function_full_2 = __NAMESPACE__ . '\\' . $api_function_full_2;
 
                         if (class_exists($api_function_full_2, false)) {
 
@@ -532,8 +556,8 @@ class DefaultController extends Controller
                     }
                 }
 
-                if (isset($res) and isset($hooks[ $api_function ]) and is_array($hooks[ $api_function ]) and !empty($hooks[ $api_function ])) {
-                    foreach ($hooks[ $api_function ] as $hook_key => $hook_value) {
+                if (isset($res) and isset($hooks[$api_function]) and is_array($hooks[$api_function]) and !empty($hooks[$api_function])) {
+                    foreach ($hooks[$api_function] as $hook_key => $hook_value) {
                         if ($hook_value != false and $hook_value != null) {
                             $hook_value($res);
                         }
@@ -547,7 +571,7 @@ class DefaultController extends Controller
             } else {
                 $api_function = mw()->format->clean_html($api_function);
                 $api_function = mw()->format->clean_xss($api_function);
-                mw_error('The api function '.$api_function.' is not defined in the allowed functions list');
+                mw_error('The api function ' . $api_function . ' is not defined in the allowed functions list');
             }
 
             if (isset($res)) {
@@ -592,7 +616,7 @@ class DefaultController extends Controller
             $_REQUEST['data-type'] = $_REQUEST['data-module-name'];
 
             if (!isset($_REQUEST['id'])) {
-                $_REQUEST['id'] = $this->app->url_manager->slug($_REQUEST['data-module-name'].'-'.date('YmdHis'));
+                $_REQUEST['id'] = $this->app->url_manager->slug($_REQUEST['data-module-name'] . '-' . date('YmdHis'));
             }
         }
 
@@ -736,7 +760,7 @@ class DefaultController extends Controller
             $this->app->content_manager->define_constants($page);
         }
         if (defined('TEMPLATE_DIR')) {
-            $load_template_functions = TEMPLATE_DIR.'functions.php';
+            $load_template_functions = TEMPLATE_DIR . 'functions.php';
             if (is_file($load_template_functions)) {
                 include_once $load_template_functions;
             }
@@ -748,9 +772,9 @@ class DefaultController extends Controller
 
             $this->render_this_url = $u1;
             $this->isolate_by_html_id = $custom_display_id;
-            $this->frontend();
+            return $this->frontend();
 
-            return;
+
         }
         $url_last = false;
         if (!isset($_REQUEST['module'])) {
@@ -810,7 +834,7 @@ class DefaultController extends Controller
         if ($module_info) {
             if ($_REQUEST['module']) {
                 $_REQUEST['module'] = str_replace('..', '', $_REQUEST['module']);
-                $try_config_file = modules_path().''.$_REQUEST['module'].'_config.php';
+                $try_config_file = modules_path() . '' . $_REQUEST['module'] . '_config.php';
                 $try_config_file = normalize_path($try_config_file, false);
                 if (is_file($try_config_file)) {
                     include $try_config_file;
@@ -820,7 +844,7 @@ class DefaultController extends Controller
                     }
 
                     if (!isset($config['icon']) or $config['icon'] == false) {
-                        $config['icon'] = modules_path().''.$_REQUEST['module'].'.png';
+                        $config['icon'] = modules_path() . '' . $_REQUEST['module'] . '.png';
                         $config['icon'] = $this->app->url_manager->link_to_file($config['icon']);
                     }
                     echo json_encode($config);
@@ -852,7 +876,7 @@ class DefaultController extends Controller
                 foreach ($url as $k => $v) {
                     $kv = explode(':', $v);
                     if (isset($kv[0]) and isset($kv[1])) {
-                        $data[ $kv[0] ] = $kv[1];
+                        $data[$kv[0]] = $kv[1];
                     }
                 }
             }
@@ -915,15 +939,18 @@ class DefaultController extends Controller
         if ($mod_n == 'layout') {
             if (isset($data['template'])) {
                 $t = str_replace('..', '', $data['template']);
-                $possible_layout = templates_path().$t;
+                $possible_layout = templates_path() . $t;
                 $possible_layout = normalize_path($possible_layout, false);
                 if (is_file($possible_layout)) {
                     $l = new \Microweber\View($possible_layout);
                     $layout = $l->__toString();
                     $layout = $this->app->parser->process($layout, $options = false);
-                    echo $layout;
+                    return response($layout);
 
-                    return;
+
+                    //  echo $layout;
+
+                    // return;
                 }
             }
         }
@@ -992,7 +1019,7 @@ class DefaultController extends Controller
         $res = preg_replace('~<(?:!DOCTYPE|/?(?:html|head|body))[^>]*>\s*~i', '', $res);
 
         if ($embed != false) {
-            $p_index = mw_includes_path().'api/index.php';
+            $p_index = mw_includes_path() . 'api/index.php';
             $p_index = normalize_path($p_index, false);
             $l = new \Microweber\View($p_index);
             $layout = $l->__toString();
@@ -1002,7 +1029,7 @@ class DefaultController extends Controller
         $aj = $this->app->url_manager->is_ajax();
 
         if (isset($_REQUEST['live_edit']) and $aj == false) {
-            $p_index = mw_includes_path().DS.'toolbar'.DS.'editor_tools'.DS.'module_settings'.DS.'index.php';
+            $p_index = mw_includes_path() . DS . 'toolbar' . DS . 'editor_tools' . DS . 'module_settings' . DS . 'index.php';
             $p_index = normalize_path($p_index, false);
             $l = new \Microweber\View($p_index);
             $l->params = $data;
@@ -1014,12 +1041,13 @@ class DefaultController extends Controller
         $res = execute_document_ready($res);
         if (!defined('MW_NO_OUTPUT')) {
             $res = $this->app->url_manager->replace_site_url_back($res);
-            echo $res;
+            return response($res);
+
+            // echo $res;
         }
 
         if ($url_last != __FUNCTION__) {
             if (function_exists($url_last)) {
-
                 //
                 $this->api($url_last);
             } elseif (isset($url_prev) and function_exists($url_prev)) {
@@ -1063,6 +1091,13 @@ class DefaultController extends Controller
         if ($this->create_new_page == true and $this->page_url != false) {
             $page_url = $this->page_url;
         }
+
+
+        $favicon_image = get_option('favicon_image', 'website');
+        if ($favicon_image) {
+            mw()->template->head('<link rel="shortcut icon" href="' . $favicon_image . '" />');
+        }
+
 
         $page = false;
 
@@ -1241,7 +1276,7 @@ class DefaultController extends Controller
         }
 
         if ($output_cache_timeout != false) {
-            $output_cache_id = __FUNCTION__.crc32($_SERVER['REQUEST_URI']);
+            $output_cache_id = __FUNCTION__ . crc32($_SERVER['REQUEST_URI']);
             $output_cache_group = 'content/preview';
             $output_cache_content = $this->app->cache_manager->get($output_cache_id, $output_cache_group, $output_cache_timeout);
             if ($output_cache_content != false) {
@@ -1284,13 +1319,13 @@ class DefaultController extends Controller
 
                     $mod_params = '';
                     if ($preview_module_template != false) {
-                        $mod_params = $mod_params." template='{$preview_module_template}' ";
+                        $mod_params = $mod_params . " template='{$preview_module_template}' ";
                     }
                     if ($preview_module_id != false) {
-                        $mod_params = $mod_params." id='{$preview_module_id}' ";
+                        $mod_params = $mod_params . " id='{$preview_module_id}' ";
                     }
                     $found_mod = $page_url;
-                    $page['content'] = '<microweber module="'.$page_url.'" '.$mod_params.'  />';
+                    $page['content'] = '<microweber module="' . $page_url . '" ' . $mod_params . '  />';
 
                     //  $page['simply_a_file'] = 'clean.php';
                     $page['layout_file'] = 'clean.php';
@@ -1303,7 +1338,7 @@ class DefaultController extends Controller
                     if (empty($page)) {
                         $the_new_page_file = false;
                         $page_url_segment_1 = $this->app->url_manager->segment(0, $page_url);
-                        $td = templates_path().$page_url_segment_1;
+                        $td = templates_path() . $page_url_segment_1;
                         $td_base = $td;
 
                         $page_url_segment_2 = $this->app->url_manager->segment(1, $page_url);
@@ -1311,7 +1346,7 @@ class DefaultController extends Controller
                         $page_url_segment_3 = $this->app->url_manager->segment(-1, $page_url);
 
                         $page_url_segment_1 = $the_active_site_template = $this->app->option_manager->get('current_template', 'template');
-                        $td_base = templates_path().$the_active_site_template.DS;
+                        $td_base = templates_path() . $the_active_site_template . DS;
 
                         $page_url_segment_3_str = implode(DS, $page_url_segment_3);
 
@@ -1322,19 +1357,19 @@ class DefaultController extends Controller
 
                             $is_ext = get_file_extension($page_url_segment_3_str);
                             if ($is_ext == false or $is_ext != 'php') {
-                                $page_url_segment_3_str = $page_url_segment_3_str.'.php';
+                                $page_url_segment_3_str = $page_url_segment_3_str . '.php';
                             }
 
-                            $td_f = $td_base.DS.$page_url_segment_3_str;
-                            $td_fd = $td_base.DS.$page_url_segment_3_str_copy;
-                            $td_fd2 = $td_base.DS.$page_url_segment_3[0];
+                            $td_f = $td_base . DS . $page_url_segment_3_str;
+                            $td_fd = $td_base . DS . $page_url_segment_3_str_copy;
+                            $td_fd2 = $td_base . DS . $page_url_segment_3[0];
 
                             if (is_file($td_f)) {
                                 $the_new_page_file = $page_url_segment_3_str;
                                 $simply_a_file = $directly_to_file = $td_f;
                             } else {
                                 if (is_dir($td_fd)) {
-                                    $td_fd_index = $td_fd.DS.'index.php';
+                                    $td_fd_index = $td_fd . DS . 'index.php';
                                     if (is_file($td_fd_index)) {
                                         $the_new_page_file = $td_fd_index;
                                         $simply_a_file = $directly_to_file = $td_fd_index;
@@ -1342,11 +1377,11 @@ class DefaultController extends Controller
                                 } else {
                                     $is_ext = get_file_extension($td_fd);
                                     if ($is_ext == false or $is_ext != 'php') {
-                                        $td_fd = $td_fd.'.php';
+                                        $td_fd = $td_fd . '.php';
                                     }
                                     $is_ext = get_file_extension($td_fd2);
                                     if ($is_ext == false or $is_ext != 'php') {
-                                        $td_fd2 = $td_fd2.'.php';
+                                        $td_fd2 = $td_fd2 . '.php';
                                     }
                                     if (is_file($td_fd)) {
                                         $the_new_page_file = $td_fd;
@@ -1355,7 +1390,7 @@ class DefaultController extends Controller
                                         $the_new_page_file = $td_fd2;
                                         $simply_a_file = $directly_to_file = $td_fd2;
                                     } else {
-                                        $td_basedef = templates_path().'default'.DS.$page_url_segment_3_str;
+                                        $td_basedef = templates_path() . 'default' . DS . $page_url_segment_3_str;
                                         if (is_file($td_basedef)) {
                                             $the_new_page_file = $td_basedef;
                                             $simply_a_file = $directly_to_file = $td_basedef;
@@ -1366,12 +1401,12 @@ class DefaultController extends Controller
                         }
 
                         $fname1 = 'index.php';
-                        $fname2 = $page_url_segment_2.'.php';
+                        $fname2 = $page_url_segment_2 . '.php';
                         $fname3 = $page_url_segment_2;
 
-                        $tf1 = $td.DS.$fname1;
-                        $tf2 = $td.DS.$fname2;
-                        $tf3 = $td.DS.$fname3;
+                        $tf1 = $td . DS . $fname1;
+                        $tf2 = $td . DS . $fname2;
+                        $tf3 = $td . DS . $fname3;
 
                         if ($directly_to_file == false and is_dir($td)) {
                             if (is_file($tf1)) {
@@ -1421,7 +1456,7 @@ class DefaultController extends Controller
                                         $page['parent'] = '0';
                                         $page['url'] = $this->app->url_manager->string();
                                         $page['active_site_template'] = $page_url_segment_1;
-                                        $page['content'] = '<module type="'.$mvalue.'" />';
+                                        $page['content'] = '<module type="' . $mvalue . '" />';
                                         $page['simply_a_file'] = 'clean.php';
                                         $page['layout_file'] = 'clean.php';
                                         template_var('content', $page['content']);
@@ -1565,6 +1600,7 @@ class DefaultController extends Controller
             }
         }
 
+
         $this->app->content_manager->define_constants($content);
 
         event_trigger('mw.front', $content);
@@ -1575,7 +1611,7 @@ class DefaultController extends Controller
         $content['render_file'] = $render_file;
 
         if (defined('TEMPLATE_DIR')) {
-            $load_template_functions = TEMPLATE_DIR.'functions.php';
+            $load_template_functions = TEMPLATE_DIR . 'functions.php';
 
             if (is_file($load_template_functions)) {
                 include_once $load_template_functions;
@@ -1607,9 +1643,9 @@ class DefaultController extends Controller
 
         if ($render_file) {
             $render_params = array();
-             if ($show_404_to_non_admin) {
+            if ($show_404_to_non_admin) {
                 if (!is_admin()) {
-                    $load_template_404 = template_dir().'404.php';
+                    $load_template_404 = template_dir() . '404.php';
                     if (is_file($load_template_404)) {
                         $render_file = $load_template_404;
                     }
@@ -1624,6 +1660,7 @@ class DefaultController extends Controller
             $render_params['content'] = $content;
             $render_params['category'] = $category;
             $render_params['page'] = $page;
+            $render_params['meta_tags'] = true;
 
             $l = $this->app->template->render($render_params);
             if (is_object($l)) {
@@ -1632,7 +1669,7 @@ class DefaultController extends Controller
 
             // used for preview from the admin wysiwyg
             if (isset($_REQUEST['isolate_content_field'])) {
-                require_once MW_PATH.'Utils'.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR.'phpQuery.php';
+                require_once MW_PATH . 'Utils' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'phpQuery.php';
                 $pq = \phpQuery::newDocument($l);
 
                 $isolated_head = pq('head')->eq(0)->html();
@@ -1646,7 +1683,7 @@ class DefaultController extends Controller
 
                 $is_admin = $this->app->user_manager->is_admin();
                 if ($is_admin == true and isset($isolated_el) != false) {
-                    $tb = mw_includes_path().DS.'toolbar'.DS.'editor_tools'.DS.'wysiwyg'.DS.'index.php';
+                    $tb = mw_includes_path() . DS . 'toolbar' . DS . 'editor_tools' . DS . 'wysiwyg' . DS . 'index.php';
 
                     //$layout_toolbar = file_get_contents($filename);
                     $layout_toolbar = new \Microweber\View($tb);
@@ -1691,18 +1728,18 @@ class DefaultController extends Controller
             //$apijs_loaded = $this->app->template->get_apijs_url() . '?id=' . CONTENT_ID;
 
             $is_admin = $this->app->user_manager->is_admin();
-            $default_css = '<link rel="stylesheet" href="'.mw_includes_url().'default.css" type="text/css" />';
+            $default_css = '<link rel="stylesheet" href="' . mw_includes_url() . 'default.css" type="text/css" />';
             $headers = event_trigger('site_header', TEMPLATE_NAME);
             $template_headers_append = '';
             $one = 1;
             if (is_array($headers)) {
                 foreach ($headers as $modify) {
                     if ($modify != false and is_string($modify) and $modify != '') {
-                        $template_headers_append = $template_headers_append.$modify;
+                        $template_headers_append = $template_headers_append . $modify;
                     }
                 }
                 if ($template_headers_append != false and $template_headers_append != '') {
-                    $l = str_ireplace('</head>', $template_headers_append.'</head>', $l, $one);
+                    $l = str_ireplace('</head>', $template_headers_append . '</head>', $l, $one);
                 }
             }
 
@@ -1713,31 +1750,31 @@ class DefaultController extends Controller
             if (is_array($template_headers_src_callback) and !empty($template_headers_src_callback)) {
                 foreach ($template_headers_src_callback as $template_headers_src_callback_str) {
                     if (is_string($template_headers_src_callback_str)) {
-                        $template_headers_src = $template_headers_src."\n".$template_headers_src_callback_str;
+                        $template_headers_src = $template_headers_src . "\n" . $template_headers_src_callback_str;
                     }
                 }
             }
             if (isset($page['created_by'])) {
                 $author = $this->app->user_manager->get_by_id($page['created_by']);
                 if (is_array($author) and isset($author['profile_url']) and $author['profile_url'] != false) {
-                    $template_headers_src = $template_headers_src."\n".'<link rel="author" href="'.trim($author['profile_url']).'" />'."\n";
+                    $template_headers_src = $template_headers_src . "\n" . '<link rel="author" href="' . trim($author['profile_url']) . '" />' . "\n";
                 }
             }
 
             if ($template_headers_src != false and is_string($template_headers_src)) {
-                $l = str_ireplace('</head>', $template_headers_src.'</head>', $l, $one);
+                $l = str_ireplace('</head>', $template_headers_src . '</head>', $l, $one);
             }
             if ($template_footer_src != false and is_string($template_footer_src)) {
-                $l = str_ireplace('</body>', $template_footer_src.'</body>', $l, $one);
+                $l = str_ireplace('</body>', $template_footer_src . '</body>', $l, $one);
             }
 
-            $l = str_ireplace('<head>', '<head>'.$default_css, $l);
+            $l = str_ireplace('<head>', '<head>' . $default_css, $l);
             if (!stristr($l, $apijs_loaded)) {
                 //$apijs_settings_loaded = $this->app->template->get_apijs_settings_url() . '?id=' . CONTENT_ID . '&category_id=' . CATEGORY_ID;;
                 $apijs_settings_loaded = $this->app->template->get_apijs_settings_url();
-                $apijs_settings_script = "\r\n".'<script src="'.$apijs_settings_loaded.'"></script>'."\r\n";
-                $apijs_settings_script .= '<script src="'.$apijs_loaded.'"></script>'."\r\n";
-                $l = str_ireplace('<head>', '<head>'.$apijs_settings_script, $l);
+                $apijs_settings_script = "\r\n" . '<script src="' . $apijs_settings_loaded . '"></script>' . "\r\n";
+                $apijs_settings_script .= '<script src="' . $apijs_loaded . '"></script>' . "\r\n";
+                $l = str_ireplace('<head>', '<head>' . $apijs_settings_script, $l);
             }
 
             if (isset($content['active_site_template']) and $content['active_site_template'] == 'default' and $the_active_site_template != 'default' and $the_active_site_template != 'mw_default') {
@@ -1748,10 +1785,10 @@ class DefaultController extends Controller
                     define('CONTENT_TEMPLATE', $content['active_site_template']);
                 }
 
-                $custom_live_edit = TEMPLATES_DIR.DS.$content['active_site_template'].DS.'live_edit.css';
-                $live_edit_css_folder = userfiles_path().'css'.DS.$content['active_site_template'].DS;
-                $live_edit_url_folder = userfiles_url().'css/'.$content['active_site_template'].'/';
-                $custom_live_edit = $live_edit_css_folder.DS.'live_edit.css';
+                $custom_live_edit = TEMPLATES_DIR . DS . $content['active_site_template'] . DS . 'live_edit.css';
+                $live_edit_css_folder = userfiles_path() . 'css' . DS . $content['active_site_template'] . DS;
+                $live_edit_url_folder = userfiles_url() . 'css/' . $content['active_site_template'] . '/';
+                $custom_live_edit = $live_edit_css_folder . DS . 'live_edit.css';
             } else {
                 if (!defined('CONTENT_TEMPLATE')) {
                     define('CONTENT_TEMPLATE', $the_active_site_template);
@@ -1760,39 +1797,39 @@ class DefaultController extends Controller
                 //                if ($the_active_site_template == 'mw_default') {
                 //                    $the_active_site_template = 'default';
                 //                }
-                $custom_live_edit = TEMPLATE_DIR.DS.'live_edit.css';
+                $custom_live_edit = TEMPLATE_DIR . DS . 'live_edit.css';
 
-                $live_edit_css_folder = userfiles_path().'css'.DS.$the_active_site_template.DS;
-                $live_edit_url_folder = userfiles_url().'css/'.$the_active_site_template.'/';
-                $custom_live_edit = $live_edit_css_folder.'live_edit.css';
+                $live_edit_css_folder = userfiles_path() . 'css' . DS . $the_active_site_template . DS;
+                $live_edit_url_folder = userfiles_url() . 'css/' . $the_active_site_template . '/';
+                $custom_live_edit = $live_edit_css_folder . 'live_edit.css';
             }
             $custom_live_edit = normalize_path($custom_live_edit, false);
 
             if (is_file($custom_live_edit)) {
                 $custom_live_editmtime = filemtime($custom_live_edit);
-                $liv_ed_css = '<link rel="stylesheet" href="'.$live_edit_url_folder.'live_edit.css?version='.$custom_live_editmtime.'" id="mw-template-settings" type="text/css" />';
-                $l = str_ireplace('</head>', $liv_ed_css.'</head>', $l);
+                $liv_ed_css = '<link rel="stylesheet" href="' . $live_edit_url_folder . 'live_edit.css?version=' . $custom_live_editmtime . '" id="mw-template-settings" type="text/css" />';
+                $l = str_ireplace('</head>', $liv_ed_css . '</head>', $l);
             }
 
             $liv_ed_css = $this->app->template->get_custom_css_url();
             if ($liv_ed_css != false) {
-                $liv_ed_css = '<link rel="stylesheet" href="'.$liv_ed_css.'" id="mw-custom-user-css" type="text/css" />';
-                $l = str_ireplace('</head>', $liv_ed_css.'</head>', $l);
+                $liv_ed_css = '<link rel="stylesheet" href="' . $liv_ed_css . '" id="mw-custom-user-css" type="text/css" />';
+                $l = str_ireplace('</head>', $liv_ed_css . '</head>', $l);
             }
             $website_head_tags = $this->app->option_manager->get('website_head', 'website');
             $rep_count = 1;
             if ($website_head_tags != false) {
-                $l = str_ireplace('</head>', $website_head_tags.'</head>', $l, $rep_count);
+                $l = str_ireplace('</head>', $website_head_tags . '</head>', $l, $rep_count);
             }
 
             if (defined('MW_VERSION')) {
-                $generator_tag = "\n".'<meta name="generator" content="Microweber" />'."\n";
-                $l = str_ireplace('</head>', $generator_tag.'</head>', $l, $rep_count);
+                $generator_tag = "\n" . '<meta name="generator" content="Microweber" />' . "\n";
+                $l = str_ireplace('</head>', $generator_tag . '</head>', $l, $rep_count);
             }
 
             if ($is_editmode == true and $this->isolate_by_html_id == false and !isset($_REQUEST['isolate_content_field'])) {
                 if ($is_admin == true) {
-                    $tb = mw_includes_path().DS.'toolbar'.DS.'toolbar.php';
+                    $tb = mw_includes_path() . DS . 'toolbar' . DS . 'toolbar.php';
 
                     $layout_toolbar = new \Microweber\View($tb);
                     $is_editmode_basic = false;
@@ -1812,16 +1849,16 @@ class DefaultController extends Controller
                         $layout_toolbar = $this->app->parser->process($layout_toolbar, $options = array('no_apc' => 1));
 
                         $c = 1;
-                        $l = str_ireplace('</body>', $layout_toolbar.'</body>', $l, $c);
+                        $l = str_ireplace('</body>', $layout_toolbar . '</body>', $l, $c);
                     }
 
-                    $custom_live_edit = TEMPLATES_DIR.DS.TEMPLATE_NAME.DS.'live_edit.php';
+                    $custom_live_edit = TEMPLATES_DIR . DS . TEMPLATE_NAME . DS . 'live_edit.php';
                     $custom_live_edit = normalize_path($custom_live_edit, false);
                     if (is_file($custom_live_edit)) {
                         $layout_live_edit = new \Microweber\View($custom_live_edit);
                         $layout_live_edit = $layout_live_edit->__toString();
                         if ($layout_live_edit != '') {
-                            $l = str_ireplace('</body>', $layout_live_edit.'</body>', $l, $c);
+                            $l = str_ireplace('</body>', $layout_live_edit . '</body>', $l, $c);
                         }
                     }
                 }
@@ -1829,7 +1866,7 @@ class DefaultController extends Controller
                 if (!isset($_REQUEST['isolate_content_field']) and !isset($_REQUEST['content_id'])) {
                     $back_to_editmode = $this->app->user_manager->session_get('back_to_editmode');
                     if ($back_to_editmode == true) {
-                        $tb = mw_includes_path().DS.'toolbar'.DS.'toolbar_back.php';
+                        $tb = mw_includes_path() . DS . 'toolbar' . DS . 'toolbar_back.php';
 
                         $layout_toolbar = new \Microweber\View($tb);
 
@@ -1838,7 +1875,7 @@ class DefaultController extends Controller
                         if ($layout_toolbar != '') {
                             $layout_toolbar = $this->app->parser->process($layout_toolbar, $options = array('no_apc' => 1));
                             $c = 1;
-                            $l = str_ireplace('</body>', $layout_toolbar.'</body>', $l, $c);
+                            $l = str_ireplace('</body>', $layout_toolbar . '</body>', $l, $c);
                         }
                     }
                 }
@@ -1851,113 +1888,7 @@ class DefaultController extends Controller
             $l = str_replace('%7BTEMPLATE_URL%7D', TEMPLATE_URL, $l);
             $l = str_replace('%7BTHIS_TEMPLATE_URL%7D', THIS_TEMPLATE_URL, $l);
             $l = str_replace('%7BDEFAULT_TEMPLATE_URL%7D', DEFAULT_TEMPLATE_URL, $l);
-            $meta = array();
-            $meta['content_image'] = '';
-            $meta['description'] = '';
-            if (is_home()) {
-                $meta['content_url'] = site_url();
-            } else {
-                $meta['content_url'] = $this->app->url_manager->current(1);
-            }
-            $meta['og_description'] = $this->app->option_manager->get('website_description', 'website');
-            $meta['og_type'] = 'website';
-            $meta_content_id = PAGE_ID;
-            if (CONTENT_ID > 0) {
-                $meta_content_id = CONTENT_ID;
-            }
 
-            if ($meta_content_id > 0) {
-                $meta = $this->app->content_manager->get_by_id($meta_content_id);
-                $content_image = $this->app->media_manager->get_picture($meta_content_id);
-                if ($content_image) {
-                    $meta['content_image'] = $content_image;
-                } else {
-                    $meta['content_image'] = '';
-                }
-                $meta['content_url'] = $this->app->content_manager->link($meta_content_id);
-                $meta['og_type'] = $meta['content_type'];
-                if ($meta['og_type'] != 'page' and trim($meta['subtype']) != '') {
-                    $meta['og_type'] = $meta['subtype'];
-                }
-                if ($meta['description'] != false and trim($meta['description']) != '') {
-                    $meta['description'] = $meta['description'];
-                } elseif ($meta['content'] != false and trim($meta['content']) != '') {
-                    $meta['description'] = str_replace("\n", ' ', $this->app->format->limit($this->app->format->clean_html(strip_tags($meta['content'])), 500));
-                }
-                if (isset($meta['description']) and $meta['description'] != '') {
-                    $meta['og_description'] = $meta['description'];
-                } else {
-                    $meta['og_description'] = trim($this->app->format->limit($this->app->format->clean_html(strip_tags($meta['content'])), 500));
-                }
-            } else {
-                $meta['title'] = $this->app->option_manager->get('website_title', 'website');
-                $meta['description'] = $this->app->option_manager->get('website_description', 'website');
-                $meta['content_meta_keywords'] = $this->app->option_manager->get('website_keywords', 'website');
-            }
-
-            $meta['og_site_name'] = $this->app->option_manager->get('website_title', 'website');
-
-            if (!empty($meta)) {
-                if (isset($meta['content_meta_title']) and $meta['content_meta_title'] != '') {
-                    $meta['title'] = $meta['content_meta_title'];
-                } elseif (isset($meta['title']) and $meta['title'] != '') {
-                } else {
-                    $meta['title'] = $this->app->option_manager->get('website_title', 'website');
-                }
-                if (isset($meta['description']) and $meta['description'] != '') {
-                } else {
-                    $meta['description'] = $this->app->option_manager->get('website_description', 'website');
-                }
-
-                if (isset($meta['description']) and $meta['description'] != '') {
-                    $meta['content_meta_description'] = strip_tags($meta['description']);
-                    unset($meta['description']);
-                } elseif (isset($meta['content']) and $meta['content'] != '') {
-                    $meta['content_meta_description'] = strip_tags($meta['content']);
-                } elseif (isset($meta['title']) and $meta['title'] != '') {
-                    $meta['content_meta_description'] = strip_tags($meta['title']);
-                }
-
-                if (isset($meta['title']) and $meta['title'] != '') {
-                    $meta['content_meta_title'] = strip_tags($meta['title']);
-                } elseif (isset($found_mod) and $found_mod != false) {
-                    $meta['content_meta_title'] = ucwords(str_replace('/', ' ', $found_mod));
-                } else {
-                    $meta['content_meta_title'] = ucwords(str_replace('/', ' ', $this->app->url_manager->segment(0)));
-                }
-
-                if (isset($meta['content_meta_keywords']) and $meta['content_meta_keywords'] != '') {
-                } else {
-                    $meta['content_meta_keywords'] = $this->app->option_manager->get('website_keywords', 'website');
-                }
-                if (is_array($meta)) {
-                    foreach ($meta as $key => $item) {
-                        if (is_string($item)) {
-                            $item = html_entity_decode($item);
-                            $item = strip_tags($item);
-                            $item = str_replace('&amp;zwnj;', ' ', $item);
-                            $item = str_replace('"', ' ', $item);
-                            $item = str_replace("'", ' ', $item);
-
-                            $item = str_replace('>', '', $item);
-                            $item = str_replace('&amp;quot;', ' ', $item);
-                            $item = str_replace('quot;', ' ', $item);
-                            $item = str_replace('&amp;', ' ', $item);
-                            $item = str_replace('amp;', ' ', $item);
-                            $item = str_replace('nbsp;', ' ', $item);
-                            $item = str_replace('#039;', ' ', $item);
-                            $item = str_replace('&amp;nbsp;', ' ', $item);
-                            $item = str_replace('&', ' ', $item);
-                            $item = str_replace(';', ' ', $item);
-                            $item = str_replace('  ', ' ', $item);
-                            $item = str_replace(' ', ' ', $item);
-                            $l = str_replace('{'.$key.'}', $item, $l);
-                        } elseif ($item == false) {
-                            $l = str_replace('{'.$key.'}', '', $l);
-                        }
-                    }
-                }
-            }
 
             if ($page != false and empty($this->page)) {
                 $this->page = $page;
@@ -1975,14 +1906,14 @@ class DefaultController extends Controller
             if ($this->isolate_by_html_id != false) {
                 $id_sel = $this->isolate_by_html_id;
                 $this->isolate_by_html_id = false;
-                require_once MW_PATH.'Utils'.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR.'phpQuery.php';
+                require_once MW_PATH . 'Utils' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'phpQuery.php';
                 $pq = \phpQuery::newDocument($l);
-                foreach ($pq[ '#'.$id_sel ] as $elem) {
+                foreach ($pq['#' . $id_sel] as $elem) {
                     $l = pq($elem)->htmlOuter();
                 }
             }
             if (mw()->user_manager->session_id() and !(mw()->user_manager->session_all() == false) and $is_editmode) {
-                session_set('last_content_id', CONTENT_ID);
+                $this->app->user_manager->session_set('last_content_id', CONTENT_ID);
             }
 
             if ($output_cache_timeout != false) {
@@ -1993,13 +1924,13 @@ class DefaultController extends Controller
                 if ($this->app->make('config')->get('app.debug')) {
                     $is_admin = $this->app->user_manager->is_admin();
                     if ($is_admin == true) {
-                        include mw_includes_path().'debug.php';
+                        include mw_includes_path() . 'debug.php';
                     }
                 }
             }
 
 
-            if($show_404_to_non_admin){
+            if ($show_404_to_non_admin) {
                 $response = \Response::make($l);
                 $response->setStatusCode(404);
                 return $response;
@@ -2030,7 +1961,7 @@ class DefaultController extends Controller
 
     public function sitemapxml()
     {
-        $sm_file = mw_cache_path().'sitemap.xml';
+        $sm_file = mw_cache_path() . 'sitemap.xml';
 
         $skip = false;
         if (is_file($sm_file)) {
@@ -2043,7 +1974,7 @@ class DefaultController extends Controller
 
         if ($skip == false) {
             $map = new \Microweber\Utils\Sitemap($sm_file);
-            $map->file = mw_cache_path().'sitemap.xml';
+            $map->file = mw_cache_path() . 'sitemap.xml';
 
             $cont = get_content('is_active=1&is_deleted=0&limit=2500&fields=id,updated_at&orderby=updated_at desc');
 
@@ -2059,7 +1990,7 @@ class DefaultController extends Controller
 
         // send the right headers
         header('Content-Type: text/xml');
-        header('Content-Length: '.filesize($map));
+        header('Content-Length: ' . filesize($map));
 
         // dump the file and stop the script
         fpassthru($fp);
@@ -2071,9 +2002,15 @@ class DefaultController extends Controller
 
     private function _api_responce($res)
     {
-        if (defined('MW_API_RAW')) {
+
+        if ($res instanceof Response) {
             return $res;
         }
+
+        if (defined('MW_API_RAW')) {
+            return response($res);
+        }
+
         if (!defined('MW_API_HTML_OUTPUT')) {
             if (is_bool($res) or is_int($res)) {
                 return json_encode($res);
@@ -2092,9 +2029,8 @@ class DefaultController extends Controller
             if (is_array($res)) {
                 $res = json_encode($res);
             }
-            echo $res;
-
-            return;
+            $response = \Response::make($res);
+            return $response;
         }
     }
 
@@ -2149,7 +2085,7 @@ class DefaultController extends Controller
 
         // header("Content-type: text/javascript");
 
-        $file = mw_includes_path().'api'.DS.'api_settings.js';
+        $file = mw_includes_path() . 'api' . DS . 'api_settings.js';
 
         $this->app->content_manager->define_constants($ref_page);
         $l = new \Microweber\View($file);
@@ -2159,8 +2095,8 @@ class DefaultController extends Controller
         $compile_assets = \Config::get('microweber.compile_assets');
         if ($compile_assets and defined('MW_VERSION')) {
             $userfiles_dir = userfiles_path();
-            $userfiles_cache_dir = normalize_path($userfiles_dir.'cache'.DS.'apijs');
-            $userfiles_cache_filename = $userfiles_cache_dir.'api_settings.'.md5(site_url().template_dir()).'.'.MW_VERSION.'.js';
+            $userfiles_cache_dir = normalize_path($userfiles_dir . 'cache' . DS . 'apijs');
+            $userfiles_cache_filename = $userfiles_cache_dir . 'api_settings.' . md5(site_url() . template_dir()) . '.' . MW_VERSION . '.js';
             if (!is_file($userfiles_cache_filename)) {
                 if (!is_dir($userfiles_cache_dir)) {
                     mkdir_recursive($userfiles_cache_dir);
@@ -2210,14 +2146,14 @@ class DefaultController extends Controller
                 }
             }
         }
-        $file = mw_includes_path().'api'.DS.'api.js';
+        $file = mw_includes_path() . 'api' . DS . 'api.js';
 
         $last_modified_time = $lastModified = filemtime($file);
 
         $ifModifiedSince = (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? $_SERVER['HTTP_IF_MODIFIED_SINCE'] : false);
         $etagHeader = (isset($_SERVER['HTTP_IF_NONE_MATCH']) ? trim($_SERVER['HTTP_IF_NONE_MATCH']) : false);
         if (defined('MW_VERSION')) {
-            $etag = md5(filemtime($file).MW_VERSION);
+            $etag = md5(filemtime($file) . MW_VERSION);
         } else {
             $etag = filemtime($file);
         }
@@ -2237,8 +2173,8 @@ class DefaultController extends Controller
         if ($compile_assets and defined('MW_VERSION')) {
             $userfiles_dir = userfiles_path();
             $hash = md5(site_url());
-            $userfiles_cache_dir = normalize_path($userfiles_dir.'cache'.DS.'apijs');
-            $userfiles_cache_filename = $userfiles_cache_dir.'api.'.$hash.'.'.MW_VERSION.'.js';
+            $userfiles_cache_dir = normalize_path($userfiles_dir . 'cache' . DS . 'apijs');
+            $userfiles_cache_filename = $userfiles_cache_dir . 'api.' . $hash . '.' . MW_VERSION . '.js';
             if (!is_file($userfiles_cache_filename)) {
                 if (!is_dir($userfiles_cache_dir)) {
                     mkdir_recursive($userfiles_cache_dir);
@@ -2258,7 +2194,7 @@ class DefaultController extends Controller
         if (!$this->app->make('config')->get('app.debug')) {
             // enable caching if in not in debug mode
             $response->header('Etag', $etag);
-            $response->header('Last-Modified', gmdate('D, d M Y H:i:s', $last_modified_time).' GMT');
+            $response->header('Last-Modified', gmdate('D, d M Y H:i:s', $last_modified_time) . ' GMT');
             $response->setTtl(30);
         }
 
@@ -2354,7 +2290,7 @@ class DefaultController extends Controller
         $page['render_file'] = $this->app->template->get_layout($page);
 
         if (defined('TEMPLATE_DIR')) {
-            $load_template_functions = TEMPLATE_DIR.'functions.php';
+            $load_template_functions = TEMPLATE_DIR . 'functions.php';
 
             if (is_file($load_template_functions)) {
                 include_once $load_template_functions;
@@ -2364,11 +2300,11 @@ class DefaultController extends Controller
         $params = $_REQUEST;
         $tool = str_replace('..', '', $tool);
 
-        $p_index = mw_includes_path().'toolbar/editor_tools/index.php';
+        $p_index = mw_includes_path() . 'toolbar/editor_tools/index.php';
         $p_index = normalize_path($p_index, false);
 
         $standalone_edit = true;
-        $p = mw_includes_path().'toolbar/editor_tools/'.$tool.'/index.php';
+        $p = mw_includes_path() . 'toolbar/editor_tools/' . $tool . '/index.php';
         $standalone_edit = false;
         if ($tool == 'plupload') {
             $standalone_edit = true;
@@ -2389,7 +2325,7 @@ class DefaultController extends Controller
 
         if ($tool == 'wysiwyg') {
             $standalone_edit = false;
-            $ed_file_from_template = TEMPLATE_DIR.'editor.php';
+            $ed_file_from_template = TEMPLATE_DIR . 'editor.php';
 
             if (is_file($ed_file_from_template)) {
                 $p_index = $ed_file_from_template;
@@ -2409,7 +2345,7 @@ class DefaultController extends Controller
                 if (!isset($page['content'])) {
                     $page['content'] = '<div class="element"></div>';
                 }
-                $page['content'] = '<div class="edit" field="content" rel="content" contenteditable="true">'.$page['content'].'</div>';
+                $page['content'] = '<div class="edit" field="content" rel="content" contenteditable="true">' . $page['content'] . '</div>';
                 $page['render_file'] = false;
             }
 
@@ -2434,24 +2370,24 @@ class DefaultController extends Controller
             $apijs_settings_loaded = $this->app->template->get_apijs_settings_url();
 
             // $is_admin = $this->app->user_manager->is_admin();
-            $default_css = '<link rel="stylesheet" href="'.mw_includes_url().'default.css" type="text/css" />';
+            $default_css = '<link rel="stylesheet" href="' . mw_includes_url() . 'default.css" type="text/css" />';
             $headers = event_trigger('site_header', TEMPLATE_NAME);
             $template_headers_append = '';
             $one = 1;
             if (is_array($headers)) {
                 foreach ($headers as $modify) {
                     if ($modify != false and is_string($modify) and $modify != '') {
-                        $template_headers_append = $template_headers_append.$modify;
+                        $template_headers_append = $template_headers_append . $modify;
                     }
                 }
                 if ($template_headers_append != false and $template_headers_append != '') {
-                    $layout = str_ireplace('</head>', $template_headers_append.'</head>', $l, $one);
+                    $layout = str_ireplace('</head>', $template_headers_append . '</head>', $l, $one);
                 }
             }
             if (function_exists('template_headers_src')) {
                 $template_headers_src = template_headers_src();
                 if ($template_headers_src != false and $template_headers_src != '') {
-                    $layout = str_ireplace('</head>', $template_headers_src.'</head>', $l, $one);
+                    $layout = str_ireplace('</head>', $template_headers_src . '</head>', $l, $one);
                 }
             }
 
@@ -2469,13 +2405,13 @@ class DefaultController extends Controller
                     }
                 }
 
-                $live_edit_css_folder = userfiles_path().'css'.DS.$active_site_template.DS;
-                $custom_live_edit = $live_edit_css_folder.DS.'live_edit.css';
+                $live_edit_css_folder = userfiles_path() . 'css' . DS . $active_site_template . DS;
+                $custom_live_edit = $live_edit_css_folder . DS . 'live_edit.css';
                 if (is_file($custom_live_edit)) {
-                    $live_edit_url_folder = userfiles_url().'css/'.$active_site_template.'/';
+                    $live_edit_url_folder = userfiles_url() . 'css/' . $active_site_template . '/';
                     $custom_live_editmtime = filemtime($custom_live_edit);
-                    $liv_ed_css = '<link rel="stylesheet" href="'.$live_edit_url_folder.'live_edit.css?version='.$custom_live_editmtime.'" id="mw-template-settings" type="text/css" />';
-                    $layout = str_ireplace('</head>', $liv_ed_css.'</head>', $l);
+                    $liv_ed_css = '<link rel="stylesheet" href="' . $live_edit_url_folder . 'live_edit.css?version=' . $custom_live_editmtime . '" id="mw-template-settings" type="text/css" />';
+                    $layout = str_ireplace('</head>', $liv_ed_css . '</head>', $l);
                 }
             }
         }
@@ -2485,9 +2421,8 @@ class DefaultController extends Controller
                 $p = new \Microweber\View($p);
                 $p->params = $params;
                 $layout = $p->__toString();
-                echo $layout;
+                return response($layout);
 
-                return;
             }
         } elseif (is_file($p)) {
             $p = new \Microweber\View($p);
@@ -2555,10 +2490,10 @@ class DefaultController extends Controller
                         if (isset($page['layout_file'])) {
                             $file = $page['layout_file'];
                             $file = str_replace('__', '/', $page['layout_file']);
-                            $err = $err.' in file '.$file;
+                            $err = $err . ' in file ' . $file;
                         }
                         if (isset($page['active_site_template'])) {
-                            $err = $err.' ('.$page['active_site_template'].' template)';
+                            $err = $err . ' (' . $page['active_site_template'] . ' template)';
                         }
 
                         return $err;
@@ -2570,15 +2505,15 @@ class DefaultController extends Controller
         if (!stristr($layout, $apijs_loaded)) {
             $rep = 0;
 
-            $default_css = $default_css."\r\n".'<script src="'.$apijs_settings_loaded.'"></script>'."\r\n";
-            $default_css = $default_css."\r\n".'<script src="'.$apijs_loaded.'"></script>'."\r\n";
-            $layout = str_ireplace('<head>', '<head>'.$default_css, $layout, $rep);
+            $default_css = $default_css . "\r\n" . '<script src="' . $apijs_settings_loaded . '"></script>' . "\r\n";
+            $default_css = $default_css . "\r\n" . '<script src="' . $apijs_loaded . '"></script>' . "\r\n";
+            $layout = str_ireplace('<head>', '<head>' . $default_css, $layout, $rep);
         }
         if (isset($page['content'])) {
             if ($standalone_edit) {
                 if (!isset($render_file)) {
                     if (stristr($page['content'], 'field="content"') or stristr($page['content'], 'field=\'content\'')) {
-                        $page['content'] = '<div class="edit" field="content" rel="content" contenteditable="true">'.$page['content'].'</div>';
+                        $page['content'] = '<div class="edit" field="content" rel="content" contenteditable="true">' . $page['content'] . '</div>';
                     }
                 }
             }
@@ -2595,10 +2530,9 @@ class DefaultController extends Controller
         $layout = str_replace('{head}', '', $layout);
 
         $layout = str_replace('{content}', '', $layout);
+        return response($layout);
 
-        echo $layout;
 
-        return;
     }
 
     public function robotstxt()
@@ -2607,14 +2541,14 @@ class DefaultController extends Controller
         $robots = get_option('robots_txt', 'website');
 
         if ($robots == false) {
-            $robots = "User-agent: *\nAllow: /"."\n";
-            $robots .= 'Disallow: /cache/'."\n";
-            $robots .= 'Disallow: /storage/'."\n";
-            $robots .= 'Disallow: /database/'."\n";
-            $robots .= 'Disallow: /vendor/'."\n";
-            $robots .= 'Disallow: /src/'."\n";
-            $robots .= 'Disallow: /userfiles/modules/'."\n";
-            $robots .= 'Disallow: /userfiles/templates/'."\n";
+            $robots = "User-agent: *\nAllow: /" . "\n";
+            $robots .= 'Disallow: /cache/' . "\n";
+            $robots .= 'Disallow: /storage/' . "\n";
+            $robots .= 'Disallow: /database/' . "\n";
+            $robots .= 'Disallow: /vendor/' . "\n";
+            $robots .= 'Disallow: /src/' . "\n";
+            $robots .= 'Disallow: /userfiles/modules/' . "\n";
+            $robots .= 'Disallow: /userfiles/templates/' . "\n";
         }
         event_trigger('mw_robot_url_hit');
         echo $robots;
@@ -2624,30 +2558,30 @@ class DefaultController extends Controller
     public function show_404()
     {
         header('HTTP/1.0 404 Not Found');
-        $v = new \Microweber\View(MW_ADMIN_VIEWS_DIR.'404.php');
+        $v = new \Microweber\View(MW_ADMIN_VIEWS_DIR . '404.php');
         echo $v;
     }
 
     public function __get($name)
     {
-        if (isset($this->vars[ $name ])) {
-            return $this->vars[ $name ];
+        if (isset($this->vars[$name])) {
+            return $this->vars[$name];
         }
     }
 
     public function __set($name, $data)
     {
         if (is_callable($data)) {
-            $this->functions[ $name ] = $data;
+            $this->functions[$name] = $data;
         } else {
-            $this->vars[ $name ] = $data;
+            $this->vars[$name] = $data;
         }
     }
 
     public function __call($method, $args)
     {
-        if (isset($this->functions[ $method ])) {
-            call_user_func_array($this->functions[ $method ], $args);
+        if (isset($this->functions[$method])) {
+            call_user_func_array($this->functions[$method], $args);
         } else {
             // error out
         }

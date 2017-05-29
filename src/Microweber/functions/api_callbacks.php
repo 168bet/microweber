@@ -29,7 +29,7 @@ api_expose_admin('get_content_by_id');
 api_expose_admin('get_products');
 api_expose_admin('delete_content');
 api_expose_admin('content/delete', function ($data) {
-    return mw()->content_manager_helpers->delete($data);
+    return mw()->content_manager->helpers->delete($data);
 });
 api_expose_admin('content_parents');
 api_expose_admin('get_content_children');
@@ -78,13 +78,13 @@ api_expose_admin('content/reorder', function ($data) {
 });
 
 api_expose_admin('content/reset_edit', function ($data) {
-    return mw()->content_manager_helpers->reset_edit_field($data);
+    return mw()->content_manager->helpers->reset_edit_field($data);
 });
 api_expose_admin('content/bulk_assign', function ($data) {
-    return mw()->content_manager_helpers->bulk_assign($data);
+    return mw()->content_manager->helpers->bulk_assign($data);
 });
 api_expose_admin('content/copy', function ($data) {
-    return mw()->content_manager_helpers->copy($data);
+    return mw()->content_manager->helpers->copy($data);
 });
 
 api_expose_admin('current_template_save_custom_css', function ($data) {
@@ -101,6 +101,12 @@ api_expose('payment_options');
 api_expose('remove_cart_item');
 api_expose('update_cart');
 api_expose('update_cart_item_qty');
+
+api_expose('shop/redirect_to_checkout', function () {
+    return mw()->shop_manager->redirect_to_checkout();
+});
+
+
 api_expose_admin('get_cart');
 api_expose_admin('get_orders');
 api_expose_admin('get_order_by_id');
@@ -146,3 +152,5 @@ api_expose('media/delete_media_file');
 api_expose('queue_dispatch', function () {
     mw()->event_manager->trigger('mw.queue.dispatch');
 });
+
+

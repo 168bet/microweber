@@ -38,6 +38,13 @@ trait QueryFilter
             $is_id = $params['id'];
         }
 
+        $strict_categories = false;
+        if (isset($params['strict_categories'])) {
+            $strict_categories = $params['strict_categories'];
+        }
+
+
+        $params_orig = $params;
         $is_fields = false;
         if (isset($params['fields']) and $params['fields'] != false) {
             $is_fields = $params['fields'];
@@ -126,6 +133,12 @@ trait QueryFilter
                 } elseif (stristr($value, '[not_in]')) {
                     $value = str_replace('[not_in]', '', $value);
                     $compare_sign = 'not_in';
+                } elseif (strtolower($value) == '[null]') {
+                    $value = str_replace('[null]', '', $value);
+                    $compare_sign = 'null';
+                } elseif (strtolower($value) == '[not_null]') {
+                    $value = str_replace('[not_null]', '', $value);
+                    $compare_sign = 'not_null';
                 }
                 if ($filter == 'created_at' or $filter == 'updated_at') {
                     $compare_value = date('Y-m-d H:i:s', strtotime($value));
@@ -241,7 +254,30 @@ trait QueryFilter
                 case 'one':
 
                     break;
+                case 'tag':
+                case 'tags':
+                case 'all_tags':
+                case 'all_tag':
 
+                    $ids = $value;
+
+                    if (is_string($ids)) {
+                        $ids = explode(',', $ids);
+                    } elseif (!is_array($ids)) {
+                        $ids = array($ids);
+                    }
+
+                    if (is_array($ids) and !empty($ids)) {
+                        $ids = array_values($ids);
+                        if ($this->supports($table, 'tag')) {
+                            if ($filter == 'tag' or $filter == 'tags') {
+                                $query = $query->withAnyTag($ids);
+                            } else if ($filter == 'all_tags' or $filter == 'all_tag') {
+                                $query = $query->withAllTags($ids);
+                            }
+                        }
+                    }
+                    break;
                 case 'category':
                 case 'categories':
 
@@ -253,19 +289,86 @@ trait QueryFilter
                         $ids = array($ids);
                     }
                     if (is_array($ids)) {
-                        //                        $query = $query->leftJoin('categories_items', function($join) use ($table,$ids)
-//                        {
-//                            $join->on('categories_items.rel_id', '=',  $table . '.id');
-//                            $join->on('categories_items.rel_type', '=',  $table);
-//                          //  $join->whereIn('categories_items.parent_id', $ids);
+                        $ids = array_filter($ids);
+
+
+                        if (!empty($ids)) {
+//                            $query = $query->join('categories_items as categories_items_joined_table', 'categories_items_joined_table.rel_id', '=', $table . '.id')
+//                             ->where('categories_items_joined_table.rel_type', $table)
+//                             ->whereIn('categories_items_joined_table.parent_id', $ids)->distinct();
+
+
+//                            if (!isset($search_joined_tables_check['categories_items'])) {
+//                                $query = $query->join('categories_items as categories_items_joined_table', 'categories_items_joined_table.rel_id', '=', $table . '.id');
+//                                $query = $query->where('categories_items_joined_table.rel_id', '=', $table . '.id');
+//                                $query = $query->where('categories_items_joined_table.rel_type', $table);
 //
-//                        })->whereIn('categories_items.parent_id', $ids)->groupBy('categories_items.rel_id');
+//                                $search_joined_tables_check['categories_items'] = true;
+//
+//                            }
+//                            $query = $query->whereIn('categories_items_joined_table.parent_id', $ids)->distinct();
+//
 
-                        $query = $query->leftJoin('categories_items', 'categories_items.rel_id', '=', $table . '.id')
-                            ->where('categories_items.rel_type', $table)
-                            ->whereIn('categories_items.parent_id', $ids)->distinct();
+                            if ($strict_categories) {
+                                $cat_ids_strict = '';
+                            }
+
+                            if (!isset($search_joined_tables_check['categories_items'])) {
+                                $search_joined_tables_check['categories_items'] = true;
+
+                                $query = $query->join('categories_items', function ($join) use ($table, $ids) {
+
+                                    $join->on('categories_items.rel_id', '=', $table . '.id')
+                                        ->where('categories_items.rel_type', '=', $table);
+                                    $join->whereIn('categories_items.parent_id', $ids)->distinct();
 
 
+                                    foreach ($ids as $cat_id) {
+                                        //    $join->where('categories_items.parent_id', intval($cat_id));
+                                    }
+
+
+//                                    foreach ($ids as $cat_id) {
+//                                        $join->where('categories_items.parent_id', $cat_id);
+//                                    }
+
+                                });
+                                // $query->whereIn('categories_items.parent_id', $ids);
+                                foreach ($ids as $cat_id) {
+                                    // $query->where('categories_items.parent_id', $cat_id);
+                                }
+
+
+                                //    $query = $query->join('categories_items as categories_items_joined_table', 'categories_items_joined_table.rel_id', '=', $table . '.id')->where('categories_items_joined_table.rel_type', $table);
+                            }
+
+
+//
+//                            if (!isset($search_joined_tables_check['categories_items'])) {
+//                                $search_joined_tables_check['categories_items'] = true;
+//
+//                                $query = $query->join('categories_items as categories_items_joined_table', 'categories_items_joined_table.rel_id', '=', $table . '.id')->where('categories_items_joined_table.rel_type', $table);
+//                            }
+//                            $query->where('categories_items_joined_table.rel_type', $table);
+//
+
+                            //  $query->whereIn('categories_items_joined_table.parent_id', $ids)->distinct();
+                            //  dd($ids);
+
+//                            foreach ($ids as $cat_id) {
+//                               $query->where('categories_items_joined_table.parent_id', $cat_id);
+//                            }
+
+                            //    $query = $query->distinct();
+
+
+//                        $query = $query->join('categories_items as categories_items_joined_table', 'categories_items_joined_table.rel_id', '=', $table . '.id')
+//                            ->where('categories_items_joined_table.rel_type', $table)
+//                            ->whereIn('categories_items_joined_table.parent_id', $ids)->distinct();
+
+                        }
+
+                        //dd($query);
                     }
                     unset($params[$filter]);
 
@@ -292,12 +395,23 @@ trait QueryFilter
                     break;
                 case 'group_by':
                     $group_by_criteria = explode(',', $value);
-                    foreach ($group_by_criteria as $c) {
-                        $query = $query->groupBy(trim($c));
+                    if (!empty($group_by_criteria)) {
+                        $group_by_criteria = array_map('trim', $group_by_criteria);
                     }
+
+
                     if ($dbDriver == 'pgsql') {
-                        $query = $query->groupBy($table . '.id');
+                        if (isset($params_orig['order_by']) and $params_orig['order_by']) {
+                            $o = explode(' ', $params_orig['order_by']);
+                            $group_by_criteria[] = $o[0];
+                        }
+                        if (!isset($params['fields'])) {
+                            $group_by_criteria[] = $table . '.id';
+                        }
                     }
+
+                    $query = $query->groupBy($group_by_criteria);
+
 
                     unset($params[$filter]);
                     break;
@@ -456,7 +570,16 @@ trait QueryFilter
                         if ($compare_value != false) {
                             $query = $query->where($table . '.' . $filter, $compare_sign, $compare_value);
                         } else {
-                            if ($compare_sign == 'in' || $compare_sign == 'not_in') {
+                            if ($compare_sign == 'null' || $compare_sign == 'not_null') {
+                                if ($compare_sign == 'null') {
+                                    $query = $query->whereNull($table . '.' . $filter);
+                                }
+                                if ($compare_sign == 'not_null') {
+                                    $query = $query->whereNotNull($table . '.' . $filter);
+                                }
+
+
+                            } else if ($compare_sign == 'in' || $compare_sign == 'not_in') {
                                 if (is_string($value)) {
                                     $value = explode(',', $value);
                                 } elseif (is_int($value)) {
@@ -494,6 +617,7 @@ trait QueryFilter
             return $array;
         }
         $r = $this->get_fields($table);
+
         $r = array_diff($r, $this->filter_keys);
         $r = array_intersect($r, array_keys($array));
         $r = array_flip($r);

@@ -38,7 +38,7 @@ if (!function_exists('site_url')) {
         }
         if ($site_url == false) {
             $pageURL = 'http';
-            if (isset($_SERVER['HTTPS']) and ($_SERVER['HTTPS'] == 'on')) {
+            if (is_https()) {
                 $pageURL .= 's';
             }
             $subdir_append = false;
@@ -322,6 +322,7 @@ function url_set_param($param, $value)
 {
     return site_url(mw()->url_manager->param_set($param, $value));
 }
+
 function url_unset_param($param)
 {
     return site_url(mw()->url_manager->param_unset($param));
@@ -449,4 +450,47 @@ function cache_clear($cache_group = 'global')
 function cache_delete($cache_group = 'global')
 {
     return mw()->cache_manager->delete($cache_group);
+}
+
+
+if (!function_exists('is_cli')) {
+    function is_cli()
+    {
+        if (defined('STDIN')) {
+            return true;
+        }
+
+        if (php_sapi_name() === 'cli') {
+            return true;
+        }
+
+        if (php_sapi_name() === 'cli-server') {
+            return true;
+        }
+
+        if (array_key_exists('SHELL', $_ENV)) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+
+if (!function_exists('is_https')) {
+    function is_https()
+    {
+        if (isset($_SERVER['HTTPS']) and (strtolower($_SERVER['HTTPS']) == 'on')) {
+            return true;
+        } else if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) and (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https')) {
+            return true;
+        }
+        return false;
+    }
+}
+if (!function_exists('is_closure')) {
+function is_closure($t)
+    {
+        return is_object($t) or ($t instanceof \Closure);
+    }
 }

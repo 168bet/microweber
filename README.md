@@ -29,7 +29,7 @@ You can easily manipulate the content and the layout of your pages. No coding sk
 
 * HTTP server ([Apache](http://httpd.apache.org/), [IIS](http://www.iis.net/downloads), [nginx](http://nginx.org/en/download.html), etc.)
 * Database server
-* PHP >= 5.4 or [HHVM](http://docs.hhvm.com/manual/en/install-intro.install.php). The following only apply to PHP as they're included in the HHVM core.
+* PHP >= 5.6 or [HHVM](http://docs.hhvm.com/manual/en/install-intro.install.php). The following only apply to PHP as they're included in the HHVM core.
   * `lib-xml` must be enabled (with DOM support)
   * `GD` PHP extension
   * `Mcrypt` PHP extension
@@ -74,7 +74,7 @@ You need to [have Composer installed](https://getcomposer.org/doc/00-intro.md) i
 
 You can clone and install Microweber with one command:
 `composer create-project microweber/microweber my_site dev-master --prefer-dist --no-dev`
-This will install Microweber in a folder named `my_ste`.
+This will install Microweber in a folder named `my_site`.
 
 Another way is to first clone the repository and then run `composer install` in the base directory.
 

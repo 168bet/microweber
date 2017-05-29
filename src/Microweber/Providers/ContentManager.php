@@ -2,6 +2,8 @@
 
 namespace Microweber\Providers;
 
+use Microweber\Providers\Content\ContentManagerCrud; 
+use Microweber\Providers\Content\ContentManagerHelpers;
 use Content;
 use Menu;
 use DB;
@@ -22,6 +24,12 @@ class ContentManager
     /** @var \Microweber\Application */
     public $app;
 
+    /** @var \Microweber\Providers\Content\ContentManagerCrud */
+    public $crud;
+    
+    /** @var \Microweber\Providers\Content\ContentManagerHelpers */
+    public $helpers;
+
     /**
      *  Boolean that indicates the usage of cache while making queries.
      *
@@ -40,6 +48,8 @@ class ContentManager
         }
 
         $this->set_table_names();
+        $this->crud = new ContentManagerCrud($this->app);
+        $this->helpers = new ContentManagerHelpers($this->app);
     }
 
     /**
@@ -188,12 +198,12 @@ class ContentManager
      */
     public function get_by_id($id)
     {
-        return $this->app->content_manager_crud->get_by_id($id);
+        return $this->crud->get_by_id($id);
     }
 
     public function get_by_url($url = '', $no_recursive = false)
     {
-        return $this->app->content_manager_crud->get_by_url($url, $no_recursive);
+        return $this->crud->get_by_url($url, $no_recursive);
     }
 
     /**
@@ -286,7 +296,7 @@ class ContentManager
      */
     public function get($params = false)
     {
-        return $this->app->content_manager_crud->get($params);
+        return $this->crud->get($params);
     }
 
     public function get_children($id = 0, $without_main_parrent = false)
@@ -354,6 +364,16 @@ class ContentManager
         $data['content_id'] = intval($content_id);
 
         return $this->app->data_fields_manager->get_values($data);
+    }
+
+    public function tags($content_id = false, $return_full = false)
+    {
+        $data = array();
+        $data['table'] = $this->tables['content'];
+        if ($content_id) {
+            $data['id'] = intval($content_id);
+        }
+        return $this->app->tags_manager->get_values($data, $return_full);
     }
 
     public function attributes($content_id)
@@ -617,8 +637,8 @@ class ContentManager
             $this->define_constants();
         }
 
-        $cache_id_params=$params;
-        if(isset($cache_id_params['link']) and is_callable($cache_id_params['link'])){
+        $cache_id_params = $params;
+        if (isset($cache_id_params['link']) and is_callable($cache_id_params['link'])) {
             unset($cache_id_params['link']);
             $params['no_cache'] = true;
         }
@@ -761,6 +781,7 @@ class ContentManager
 
             $sql = "SELECT * from $table where  " . $par_q . $content_type_q . "   and   is_deleted=0 $is_shop  order by position desc limit 0,100";
         }
+
         $cid = __FUNCTION__ . crc32($sql);
         $cidg = 'content/' . $parent;
         if (!is_array($params)) {
@@ -1000,11 +1021,7 @@ class ContentManager
                             $the_active_class = $active_class;
 
 
-
-
-
-
-                            if(is_callable($link)){
+                            if (is_callable($link)) {
                                 $to_print = call_user_func_array($link, array($item));
                             } else {
                                 $to_print = $link;
@@ -1037,10 +1054,10 @@ class ContentManager
 
                             if (strstr($to_print, '{tn}')) {
                                 $content_img = get_picture($item['id']);
-                                if($content_img){
+                                if ($content_img) {
                                     $to_print = str_replace('{tn}', $content_img, $to_print);
                                 } else {
-                                    $to_print = str_replace('{tn}','', $to_print);
+                                    $to_print = str_replace('{tn}', '', $to_print);
                                 }
                             }
                             foreach ($item as $item_k => $item_v) {
@@ -1212,6 +1229,7 @@ class ContentManager
                                     $cat_params['li_class'] = $params['li_class'];
                                 }
                             }
+
                             $this->app->category_manager->tree($cat_params);
                         }
                     }
@@ -1905,7 +1923,7 @@ class ContentManager
 
     public function save_edit($post_data)
     {
-        return $this->app->content_manager_helpers->save_from_live_edit($post_data);
+        return $this->helpers->save_from_live_edit($post_data);
     }
 
     /**
@@ -2042,12 +2060,12 @@ class ContentManager
 
         $this->app->event_manager->trigger('content.manager.before.save', $data);
         $data_to_save = $data;
-        $save = $this->app->content_manager_crud->save($data);
+        $save = $this->crud->save($data);
         $id = $save;
         if (isset($data_to_save['add_content_to_menu']) and is_array($data_to_save['add_content_to_menu'])) {
             foreach ($data_to_save['add_content_to_menu'] as $menu_id) {
                 $ids_to_save = $save;
-                $this->app->content_manager_helpers->add_content_to_menu($ids_to_save, $menu_id);
+                $this->helpers->add_content_to_menu($ids_to_save, $menu_id);
             }
         }
         $after_save = $data_to_save;
@@ -2067,12 +2085,12 @@ class ContentManager
 
     public function save_content_field($data, $delete_the_cache = true)
     {
-        return $this->app->content_manager_helpers->save_content_field($data);
+        return $this->helpers->save_content_field($data);
     }
 
     public function edit_field($data, $debug = false)
     {
-        return $this->app->content_manager_crud->get_edit_field($data);
+        return $this->crud->get_edit_field($data);
     }
 
     public function save($data, $delete_the_cache = true)
@@ -2202,7 +2220,7 @@ class ContentManager
             return array('error' => 'You must be admin to reorder content!');
         }
 
-        return $this->app->content_manager_crud->reorder($params);
+        return $this->crud->reorder($params);
     }
 
     /**
@@ -2385,19 +2403,5 @@ class ContentManager
         return $this->app->template_manager->site_templates();
     }
 
-    public function ping()
-    {
 
-//        if (!is_object($this->pinger)) {
-//            if (!isset($this->app->adapters->container['content_ping'])) {
-//                $app = $this->app;
-//                $this->app->adapters->container['content_ping'] = function ($c) use ($app) {
-//                    return new Adapters\Ping\SearchEngines($app);
-//                };
-//            }
-//            $this->pinger = $this->app->adapters->container['content_ping'];
-//        }
-//
-//        return $this->pinger->ping();
-    }
 }

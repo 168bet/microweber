@@ -197,6 +197,9 @@
     background-position: -181px 3px;
     width: 33px;
 }
+.mw_editor_paste_from_word .ed-ico{
+   background-position: -877px 3px;  
+}
 
 .mw_editor_font_background_color .ed-ico {
     background-position: -215px 6px;
@@ -808,11 +811,48 @@
 /* Icons */
 
 .mw-icon-selector {
-    max-height: 120px;
+    height: 120px;
     width: 300px;
     background-color: white;
     overflow-x: hidden;
     overflow-y: auto;
+    resize: vertical;
+}
+
+.mw-icon-selector{
+    width: 100%;
+    display: none;
+}
+
+.icon-picker-search{
+  position: absolute;
+    top: 11px;
+    z-index: 10;
+    right: 10px;
+    display: block;
+}
+
+.mw-icon-selector-dropdown-wrapper{
+    position: relative;
+    z-index: 5;
+}
+
+.mw-icon-selector-dropdown{
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    visibility: hidden;
+    opacity: 0;
+    -webkit-transition: all 0.3s;
+    -moz-transition: all 0.3s;
+    transition: all 0.3s;
+    display: block;
+}
+.mw-icon-selector-dropdown-wrapper.focused .mw-icon-selector-dropdown{
+    visibility: visible;
+    opacity: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25)
 }
 
 .mw-icon-selector-set-icon-size {
@@ -852,6 +892,14 @@
 
 .icon-section-title + .mw-ui-box {
     margin-top: 12px;
+}
+
+.mw-cleaner-block{
+    padding: 10px;
+    border: 1px solid #DADADA;
+    overflow: auto;
+    height: 400px;
+    margin-bottom: 15px;
 }
 
 /* /Icons */

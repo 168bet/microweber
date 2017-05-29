@@ -88,7 +88,7 @@ $(document).ready(function(){
             <div class="mw-dropdown mw-dropdown-type-wysiwyg mw_dropdown_action_font_size" id="font_size_selector_main" title="<?php _e("Font Size"); ?>">
                 <span class="mw-dropdown-value">
                   <span class="mw-dropdown-arrow"></span>
-                  <span class="mw-dropdown-val" >Size</span>
+                  <span class="mw-dropdown-val" ><?php _e('Size'); ?></span>
                 </span>
                 <div class="mw-dropdown-content">
                     <ul>
@@ -131,6 +131,7 @@ $(document).ready(function(){
             <span class="mw_editor_btn mw_editor_unlink" data-command="custom-unlink" title="<?php _e("Remove Link"); ?>"><span class="ed-ico"></span></span>
 
 
+            <span title="Paste from word" onclick="mw.wysiwyg.pasteFromWordUI();" class="mw_editor_btn mw_editor_remove_formatting"><span class="ed-ico"></span></span>
             <span class="mw_editor_btn mw_editor_remove_formatting" data-command="removeformat" title="<?php _e("Remove Formatting"); ?>"><span class="ed-ico"></span></span>
 
             <?php

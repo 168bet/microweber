@@ -81,10 +81,11 @@ class Modules
 
     public function install()
     {
+
         $this->_install_mode = true;
-
+        mw()->cache_manager->delete('db');
+        mw()->cache_manager->clear();
         $this->scan();
-
         $this->_install_mode = false;
     }
 
@@ -289,7 +290,7 @@ class Modules
                                     $json = @json_decode($json, true);
                                     $tablesData = $json;
                                 }
-                                $this->save($config);
+                                $s = $this->save($config);
 
                                 if ($tablesData) {
                                     (new DbUtils())->build_tables($tablesData);
@@ -378,10 +379,12 @@ class Modules
 
                 if (!isset($s['module_id'])) {
                     $save = $this->get_modules('ui=any&limit=1&module='.$s['module']);
-                    if ($save != false and isset($save[0]) and is_array($save[0])) {
+                   // d($save);
+                    if ($save != false and isset($save[0]) and is_array($save[0]) and isset($save[0]['id']) and ($save[0]['id'])) {
                         $s['id'] = intval($save[0]['id']);
                         $s['position'] = intval($save[0]['position']);
                         $s['installed'] = intval($save[0]['installed']);
+
                         $save = mw()->database_manager->save($table, $s);
                         $mname_clen = str_replace('\\', '/', $s['module']);
                         if ($s['id'] > 0) {
@@ -391,6 +394,7 @@ class Modules
                             //mw()->database_manager->q($del);
                         }
                     } else {
+
                         $save = mw()->database_manager->save($table, $s);
                     }
                 }
@@ -398,41 +402,13 @@ class Modules
                 $save = mw()->database_manager->save($table, $s);
             }
         }
-
         return $save;
     }
 
     public function get_modules($params)
     {
         return $this->get($params);
-//        if (is_string($params)){
-//            $params = parse_str($params, $params2);
-//            $params = $params2;
-//        }
-//        $params['table'] = $this->table;
-//        $params['group_by'] = 'module';
-//        $params['order_by'] = 'position asc';
-//        $params['cache_group'] = 'modules/global';
-//        if (isset($params['id'])){
-//            $params['limit'] = 1;
-//        } else {
-//            $params['limit'] = 1000;
-//        }
-//        if (isset($params['module'])){
-//            $params['module'] = str_replace('/admin', '', $params['module']);
-//        }
-//        if (isset($params['keyword'])){
-//            $params['search_in_fields'] = array('name', 'module', 'description', 'author', 'website', 'version', 'help');
-//        }
-//
-//        if (isset($params['ui']) and $params['ui']=='any'){
-//            unset($params['ui']);
-//        }
-//
-//
-//
-//        return mw()->database_manager->get($params);
-    }
+     }
 
     public function get($params = false)
     {
@@ -445,6 +421,7 @@ class Modules
         $params['group_by'] = 'module';
         $params['order_by'] = 'position asc';
         $params['cache_group'] = 'modules/global';
+
         if (isset($params['id'])) {
             $params['limit'] = 1;
         } else {
@@ -467,6 +444,7 @@ class Modules
         }
 
         $data = $this->app->database_manager->get($params);
+
         if (is_array($data) and !empty($data)) {
             if (isset($data['settings']) and !is_array($data['settings'])) {
                 $data['settings'] = json_decode($data['settings']);
@@ -988,6 +966,9 @@ class Modules
                             $comb = array_merge($module_skins_from_theme, $module_name_l);
                             if (is_array($comb) and !empty($comb)) {
                                 foreach ($comb as $k1 => $itm) {
+                                    if(isset($itm['layout_file']) and $itm['layout_file']){
+                                        $itm['layout_file'] = normalize_path($itm['layout_file']);
+                                    }
                                     if (!in_array($itm['layout_file'], $file_names_found)) {
                                         if (isset($itm['visible'])) {
                                             if ($itm['visible'] == 'false'

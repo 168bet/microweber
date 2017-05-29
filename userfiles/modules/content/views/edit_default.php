@@ -4,7 +4,7 @@ only_admin_access();
 $edit_page_info = $data;
 
 
- 
+
 
 ?>
 
@@ -59,15 +59,14 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
                     } else {
                         $type = 'page';
                     };
-                    $action_text = _e("Creating new", true);
+                    $action_text = _e("Creating new " . $type, true);
                     if (isset($edit_page_info['id']) and intval($edit_page_info['id']) != 0) {
-                        $action_text = _e("Editting", true);
+                        $action_text = _e("Editting " . $type, true);
                     }
-                    $action_text2 = $type;
                     if (isset($edit_page_info['content_type']) and $edit_page_info['content_type'] == 'post' and isset($edit_page_info['subtype'])) {
                         //     $action_text2 = $edit_page_info['subtype'];
                     }
-                    $action_text = $action_text . ' ' . $action_text2;
+
                     if (isset($edit_page_info['title'])): ?>
                         <?php //$title_for_input = htmlentities($edit_page_info['title'], ENT_QUOTES); ?>
 
@@ -93,8 +92,8 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
                                          title="<?php print $title; ?>"><?php print $html; ?></div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
-                            
-                            
+
+
                             <?php $custom_title_ui = mw()->modules->ui('content.edit.title.end'); ?>
                             <?php if (!empty($custom_title_ui)): ?>
                                 <?php foreach ($custom_title_ui as $item): ?>
@@ -107,9 +106,9 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
                                          title="<?php print $title; ?>"><?php print $html; ?></div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
-                            
-                            
-                            
+
+
+
                         </div>
                         <script>mwd.getElementById('content-title-field').focus();</script>
                     <?php else: ?>
@@ -183,7 +182,11 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
                         <?php endif; ?>
                     </ul>
                 </div>
-                <script>mw.admin.titleColumnNavWidth();</script>
+                <script>
+                    $(window).on('load', function(){
+                        mw.admin.titleColumnNavWidth();
+                    })
+                </script>
             </div>
         </div>
     </div>
@@ -200,7 +203,7 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
       </span>
             <hr>
             <span class="mw-ui-btn mw-ui-btn-medium post-move-to-trash"
-                  onclick="mw.del_current_page('<?php print ($data['id']) ?>');"><span class="mw-icon-bin"></span>Move to trash</span>
+                  onclick="mw.del_current_page('<?php print ($data['id']) ?>');"><span class="mw-icon-bin"></span><?php _e('Move to trash'); ?></span>
         </div>
     </div>
 </div>
@@ -273,7 +276,7 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
 
                     <module
                         type="content/views/selector"
-                        no-parent-title="No parent page"
+                        no-parent-title="<?php _e('No parent page'); ?>"
                         field-name="parent_id_selector"
                         change-field="parent"
                         selected-id="<?php print $data['parent']; ?>"
@@ -339,7 +342,7 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
 									var checked = mwd.querySelector('#pages_edit_container input[type=radio]:checked');
 									}
 									if(checked == null){
-									return;	
+									return;
 									}
 									 var parent = "content_id"
                                   //  var parent = mw.tools.firstParentWithTag(checked, 'li');
@@ -351,13 +354,13 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
 									//data[parent] = checked.value;
                                     $.post(mw.settings.api_url + "category/save", data, function () {
 										mw.reload_module("categories/selector",function(el){
-										 
+
 										mw.$("#category-tree-not-found-message").hide();
                                         mw.$("#parent-category-selector-block").show();
 										 mw.treeRenderer.appendUI('#'+$(el).attr('id'));
-											
+
 										})
-										
+
                                        // CreateCategoryForPost(0);
                                     });
                                 }
@@ -371,7 +374,7 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
                                 <?php _e("not found"); ?>
                                 .</h3>
                             <br>
-                              <span class="mw-ui-btn mw-ui-btn-invert" onclick="CreateCategoryForPost(3)" ><em class="mw-icon-plus"></em><?php _e("Create it"); ?></span> 
+                              <span class="mw-ui-btn mw-ui-btn-invert" onclick="CreateCategoryForPost(3)" ><em class="mw-icon-plus"></em><?php _e("Create it"); ?></span>
                            </div>
                         <div id="parent-category-selector-block">
                             <h3>
@@ -391,11 +394,21 @@ if(isset($data['content_type']) and $data['content_type'] == 'page') {
         $data['active_categories'] = $categories_active_ids;
         print load_module('content/views/tabs', $data); ?>
     </div>
-    <?php if (isset($data['subtype']) and isset($data['content_type']) and ($data['content_type'] == 'page') and $data['subtype'] == 'dynamic'): ?>
-        <module type="content/views/layout_selector" id="mw-quick-add-choose-layout-middle-pos" autoload="yes"
-                template-selector-position="bottom" content-id="<?php print $data['id']; ?>"
-                inherit_from="<?php print $data['parent']; ?>"/>
+    <?php if (isset($data['content_type']) and ($data['content_type'] == 'page')): ?>
+         <?php if (isset($data['id']) and ($data['id'] == 0)): ?>
+            <module type="content/views/layout_selector" id="mw-quick-add-choose-layout-middle-pos" autoload="yes"
+                    template-selector-position="top" live-edit-btn-overlay="true" content-id="<?php print $data['id']; ?>" edit_page_id="<?php print $data['id']; ?>"
+                    inherit_from="<?php print $data['parent']; ?>"    />
+
+
+            <?php else: ?>
+            <module type="content/views/layout_selector" id="mw-quick-add-choose-layout-middle-pos" autoload="yes"
+                    template-selector-position="top" live-edit-btn-overlay="true" content-id="<?php print $data['id']; ?>" edit_page_id="<?php print $data['id']; ?>"
+                    inherit_from="<?php print $data['parent']; ?>" small="true" layout_file"="<?php print $data['layout_file']; ?>"   />
+        <?php  endif; ?>
+
         <?php
+
         $data['recommended_parent'] = $recommended_parent;
         $data['active_categories'] = $categories_active_ids;
         //print load_module('content/edit_default',$data);
@@ -446,10 +459,42 @@ mw.edit_content.close_alert = function () {
 
 };
 
-
-mw.edit_content.load_editor = function (element_id) {
+mw.edit_content.load_page_preview = function (element_id) {
     var element_id = element_id || 'mw-admin-content-iframe-editor';
     var area = mwd.getElementById(element_id);
+    var parent_page = mw.$('#mw-parent-page-value-<?php print $rand; ?>', '#<?php print $params['id'] ?>').val();
+    var content_id = mw.$('#mw-content-id-value', '#<?php print $params['id'] ?>').val();
+    var content_type = mw.$('#mw-content-type-value-<?php print $rand; ?>', '#<?php print $params['id'] ?>').val()
+    var subtype = mw.$('#mw-content-subtype', '#<?php print $params['id'] ?>').val();
+    var subtype_value = mw.$('#mw-content-subtype-value-<?php print $rand; ?>', '#<?php print $params['id'] ?>').val();
+    var active_site_template = $('#mw-active-template-value-<?php print $rand; ?>', '#<?php print $params['id'] ?>').val();
+    var active_site_layout = $('#mw-layout-file-value-<?php print $rand; ?>').val();
+    // var name = 'content/views/edit_default_inner';
+    var name = 'content/views/layout_selector';
+     var selector = '#mw-admin-edit-content-main-area';
+
+
+
+
+    var callback = false;
+    var attributes = {}
+    attributes.parent_page = parent_page;
+    attributes.content_id = content_id;
+    attributes.content_id = content_id;
+    attributes.content_type = content_type;
+    attributes.subtype = subtype;
+    attributes.subtype_value = subtype_value;
+    attributes.active_site_template = active_site_template;
+    attributes.active_site_layout = active_site_layout;
+    attributes['template-selector-position'] = 'none';
+    attributes['live-edit-overlay'] =true;
+    attributes['edit_page_id'] =content_id;
+    mw.load_module(name, selector, callback, attributes);
+}
+
+
+mw.edit_content.load_editor = function (element_id) {
+
     var parent_page = mw.$('#mw-parent-page-value-<?php print $rand; ?>', '#<?php print $params['id'] ?>').val();
     var content_id = mw.$('#mw-content-id-value', '#<?php print $params['id'] ?>').val();
     var content_type = mw.$('#mw-content-type-value-<?php print $rand; ?>', '#<?php print $params['id'] ?>').val()
@@ -496,7 +541,7 @@ mw.edit_content.after_save = function (saved_id) {
         <?php endif; ?>
     }
     if (mw.notification != undefined) {
-        mw.notification.success('Content saved!');
+        mw.notification.success('<?php _e('Content saved!'); ?>');
     }
     if (parent !== self && !!parent.mw) {
 
@@ -708,7 +753,7 @@ mw.edit_content.handle_form_submit = function (go_live) {
                 //  mw.$("#<?php print $module_id ?>").attr("just-saved",this);
                 <?php else: ?>
                 //if (self === parent) {
-				if (self === parent) {	
+				if (self === parent) {
                     //var type =  el['subtype'];
                     mw.url.windowHashParam("action", "editpage:" + this);
                 }
@@ -716,11 +761,11 @@ mw.edit_content.handle_form_submit = function (go_live) {
                 mw.edit_content.after_save(this);
             }
             mw.edit_content.saving = false;
-			
-			
-			
+
+
+
 			$(window).trigger('adminSaveContentCompleted');
-			
+
 			if (self !== parent) {
 			if ((data.id) == 0) {
 				mw.$("#<?php print $module_id ?>").attr("content-id", this);
@@ -728,16 +773,16 @@ mw.edit_content.handle_form_submit = function (go_live) {
 				mw.reload_module("#<?php print $module_id ?>");
 			}
 			}
-		
 
-			
-			
+
+
+
         },
         onError: function () {
             $(window).trigger('adminSaveFailed');
             module.removeClass('loading');
             if (typeof this.title !== 'undefined') {
-                mw.notification.error('Please enter title');
+                mw.notification.error('<?php _e('Please enter title'); ?>');
                 $('.mw-title-field').animate({
                     paddingLeft: "+=5px",
                     backgroundColor: "#efecec"
@@ -748,7 +793,7 @@ mw.edit_content.handle_form_submit = function (go_live) {
                     });
             }
             if (typeof this.content !== 'undefined') {
-                mw.notification.error('Please enter content');
+                mw.notification.error('<?php _e('Please enter content'); ?>');
             }
             if (typeof this.error !== 'undefined') {
                 mw.session.checkPause = false;

@@ -269,7 +269,11 @@ class UrlManager {
             } else {
                 $serverrequri = $_SERVER['REQUEST_URI'];
             }
-            $s = empty($_SERVER['HTTPS']) ? '' : ($_SERVER['HTTPS']=='on') ? 's' : '';
+            $s = '';
+            if(is_https()){
+                $s = 's';
+            }
+
             $protocol = 'http';
             $port = 80;
             if (isset($_SERVER['SERVER_PROTOCOL'])){
@@ -451,7 +455,7 @@ class UrlManager {
         if (is_array($arr) and !empty($arr)){
             $ret = array();
             foreach ($arr as $k => $v) {
-                if (is_array($v)){
+                if (is_array($v) and !empty($v)){
                     $v = $this->replace_site_url($v);
                 } elseif (is_string($v)) {
                     $v = str_ireplace($site, '{SITE_URL}', $v);
@@ -461,6 +465,7 @@ class UrlManager {
 
             return $ret;
         }
+        return $arr;
     }
 
     public $repaced_urls = array();
@@ -486,12 +491,20 @@ class UrlManager {
         if (is_array($arr) and !empty($arr)){
             $ret = array();
             foreach ($arr as $k => $v) {
-                if (is_array($v)){
-                    $v = $this->replace_site_url_back($v);
-                } elseif (is_string($v) and $v!=='0') {
-                    $v = $this->replace_site_url_back($v);
+                $parser_mem_crc = 'replace_site_vars_back_' . crc32(serialize($k).serialize($v));
+                if (isset($this->repaced_urls[ $parser_mem_crc ])){
+                    $ret[ $k ] = $this->repaced_urls[ $parser_mem_crc ];
+                } else {
+                    if (is_array($v)){
+                        $v = $this->replace_site_url_back($v);
+                    } elseif (is_string($v) and $v!=='0') {
+                        $v = $this->replace_site_url_back($v);
+                    }
+                    $this->repaced_urls[ $parser_mem_crc ] = $v;
+
+                    $ret[ $k ] = $v;
                 }
-                $ret[ $k ] = ($v);
+
             }
 
             return $ret;

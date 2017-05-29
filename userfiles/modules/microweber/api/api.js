@@ -1,14 +1,16 @@
-if (typeof jQuery == 'undefined') {  
+if (typeof jQuery == 'undefined') {
 
 <?php
 
 
-    $haystack = load_web_component_file('jquery/jquery.min.js');
+    $haystack = load_web_component_file('jquery/jquery-3.1.0.min.js');
+    $haystack .= "\n\n".load_web_component_file('jquery/jquery-migrate-3.0.0.js');
 	 
  
 	$needle = '//@ sourceMappingURL=';
 	$replace = '//@ disabled_sourceMappingURL=';
 	$pos = strpos($haystack,$needle);
+	$newstring = $haystack;
 	if ($pos !== false) {
 		$newstring = substr_replace($haystack,$replace,$pos,strlen($needle));
 	}
@@ -111,12 +113,25 @@ mw.askusertostay = false;
 
 
   mw.required = typeof mw.required === 'undefined'?[]:mw.required;
-  mw.require = function(url, inHead) {
-    var inHead = inHead || false;
+  mw.require = function(url, inHead, key) {
+    if(typeof inHead === 'boolean' || typeof inHead === 'undefined'){
+        inHead = inHead || false;
+    }
+    if(typeof inHead === 'string'){
+        var keyString = ''+inHead;
+        inHead = key || false;
+    }
+    if(typeof key === 'string'){
+        var keyString = key;
+    }
+    var toPush = url;
+    if(!!keyString){
+        toPush = keyString;
+    }
     var t = url.split('.').pop();
     var url = url.contains('//') ? url : (t !== "css" ? "<?php print( mw_includes_url() ); ?>api/" + url  :  "<?php print( mw_includes_url() ); ?>css/" + url);
-    if (!~mw.required.indexOf(url)) {
-      mw.required.push(url);
+    if (!~mw.required.indexOf(toPush)) {
+      mw.required.push(toPush);
       var url = url.contains("?") ?  url + '&mwv=' + mw.version : url + "?mwv=" + mw.version;
       var string = t != "css" ? "<script type='text/javascript'  src='" + url + "'></script>" : "<link rel='stylesheet' type='text/css' href='" + url + "' />";
       if ((mwd.readyState === 'loading' || mwd.readyState === 'interactive') && !inHead && !!window.CanvasRenderingContext2D && self === parent) {
@@ -156,6 +171,8 @@ mw.askusertostay = false;
   mw.moduleJS = mw.module_js = function(url){
     mw.require(url, true);
   }
+
+
 
   mw.wait = function(a, b, max) {
     window[a] === undefined ? setTimeout(function() {
@@ -474,7 +491,7 @@ mw.askusertostay = false;
       return false;
     }
 
-    $.post(url, to_send, function(data) {
+    var xhr = $.post(url, to_send, function(data) {
       if(mw.session != undefined){
         mw.session.checkPause = false;
       }
@@ -492,7 +509,7 @@ mw.askusertostay = false;
       else{
         var id = docdata.body.querySelector(['id']);
       }
-      mw.$(selector).replaceWith(docdata.body.innerHTML);
+      mw.$(selector).replaceWith($(docdata.body).html());
       if(!id){ mw.pauseSave = false;mw.on.DOMChangePause = false;  return false; }
       typeof mw.resizable_columns === 'function' ? mw.resizable_columns() : '';
       typeof mw.drag !== 'undefined' ? mw.drag.fix_placeholders(true) : '';
@@ -684,6 +701,8 @@ mw._response = {
   },
   createHTML:function(data, holder){
     var i, html = "";
+
+
     if(typeof data === 'string'){
         html+= data.toString();
     }
@@ -691,6 +710,11 @@ mw._response = {
       for( i in data){
           if(typeof data[i] === 'string'){
               html+='<li>'+data[i]+'</li>';
+          }
+          else if(typeof data[i] === 'object'){
+            $.each(data[i], function(){
+                html+='<li>'+this+'</li>';
+            })
           }
       }
     }
@@ -749,6 +773,9 @@ mw.required.push("<?php print mw_includes_url(); ?>api/shop.js");
 <?php  include "url.js"; ?>
 <?php  include "events.js"; ?>
 <?php  include "shop.js"; ?>
+
+
+
 
 
 

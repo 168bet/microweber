@@ -131,7 +131,7 @@
 
           <div class="mw-dropdown mw-dropdown-type-wysiwyg mw_dropdown_action_font_size" id="font_size_selector_main" title="<?php _e("Font Size"); ?>"> <span class="mw-dropdown-value">
             <?php /*<input type="text" class="mw-dropdown-field"  />         */ ?>
-            <span class="mw-dropdown-arrow"></span> <span class="mw-dropdown-val" >Size</span> </span>
+            <span class="mw-dropdown-arrow"></span> <span class="mw-dropdown-val" ><?php _e('Size'); ?></span> </span>
             <div class="mw-dropdown-content">
                     <ul>
                           <li value="10"><a href="javascript:;">10</a></li>
@@ -146,7 +146,7 @@
                           <li value="36"><a href="javascript:;">36</a></li>
                           <li value="48"><a href="javascript:;">48</a></li>
                           <li value="72"><a href="javascript:;">72</a></li>
-                          <li onclick="mw.wysiwyg.fontSizePrompt()"><a href="javascript:;">...</a></li>
+                          <li onclick="mw.wysiwyg.fontSizePrompt()"><a href="javascript:;" style=" z-index: 1; background-color: #f5f5f5; text-align: center; padding-top: 0px; padding-bottom: 3px;"><small style="text-transform: lowercase; color: black;"><?php _e('more'); ?></small></a></li>
                     </ul>
             </div>
           </div>
@@ -205,11 +205,11 @@
       </div>
     </div>
     <div class="wysiwyg-cell visible-1440"> <span class="mw_editor_btn mw_editor_link" data-command="custom-link" title="<?php _e("Add/Edit Link"); ?>"><span class="ed-ico"></span></span> <?php /*<span data-command="custom-createelement" title="Create Draggable Element from selected text." class="mw_editor_btn mw_editor_element mw_editor_btn_active"><span class="ed-ico"></span></span>*/ ?> </div>
+    <div class="wysiwyg-cell"><span title="Paste from word" onclick="mw.wysiwyg.pasteFromWordUI();" class="mw_editor_btn mw_editor_paste_from_word"><span class="ed-ico"></span></span></div>
     <div class="wysiwyg-cell"><span class="mw_editor_btn mw_editor_remove_formatting" data-command="removeformat" title="<?php _e("Remove Formatting"); ?>"><span class="ed-ico"></span></span></div>
 
      <div class="wysiwyg-cell"> <span class="mw_editor_btn mw_editor_element" title="<?php _e("Create Draggable Element from selected text."); ?>" data-command="custom-createelement"><span class="ed-ico"></span></span></div>
-         <div class="wysiwyg-cell"><span class="mw_editor_btn mw_editor_css_editor" id="mw-toolbar-css-editor-btn" title="<?php _e("CSS Editor"); ?>"><span class="ed-ico"></span></span></div>
-
+         
     <?php if(file_exists(TEMPLATE_DIR.'template_settings.php')){ ?>
     <div class="wysiwyg-cell"><span class="mw_editor_btn editor-template-settings" id="toolbar-template-settings" title="<?php _e("Template Settings"); ?>"><span class="ed-ico"></span></span></div>
     <?php } ?>

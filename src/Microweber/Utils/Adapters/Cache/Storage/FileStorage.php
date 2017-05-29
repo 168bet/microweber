@@ -6,7 +6,7 @@ use Illuminate\Contracts\Cache\Store;
 use Illuminate\Filesystem\Filesystem;
 use Closure;
 
-class FileStorage implements Store
+class FileStorage
 {
     protected $files;
     protected $prefix;
@@ -73,7 +73,7 @@ class FileStorage implements Store
                 return $this->forget($key);
             }
             if ($contents) {
-                $this->memory[ $key ] = unserialize(substr($contents, 10));
+                $this->memory[ $key ] = @unserialize(substr($contents, 10));
             }
         }
 
